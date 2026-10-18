@@ -83,7 +83,9 @@ test('index.html loads the coaching HUD bootstrap module', () => {
 });
 
 test('named persons are brand-tagged so mentolder can hide them', () => {
-  assert.ok(clientSrc.includes("brand: 'korczewski'"), 'NAMED_PERSONS entries must carry a brand tag');
+  // Gerald 18.10.2026: Fotos/Personen entfernt – eine leere Liste erfüllt die Absicht ebenso.
+  assert.ok(clientSrc.includes("brand: 'korczewski'") || /NAMED_PERSONS[^=]*=\s*\[\]/.test(clientSrc),
+    'NAMED_PERSONS entries must carry a brand tag (or the list is empty)');
 });
 
 test('add message carries the figure label', () => {

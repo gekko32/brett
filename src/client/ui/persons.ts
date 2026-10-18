@@ -4,13 +4,9 @@ import { recolorFigure } from '../mannequin';
 import { applyAppearanceToFig } from './appearance';
 import { sendUpdate } from '../ws-client';
 
-export const NAMED_PERSONS = [
-  { key: 'portrait-patrick',   label: 'Patrick',   color: '#6f8db8', brand: 'korczewski' },
-  { key: 'portrait-christina', label: 'Christina', color: '#c06be0', brand: 'korczewski' },
-  { key: 'portrait-papa',      label: 'Papa',      color: '#808080', brand: 'korczewski' },
-  { key: 'portrait-martina',   label: 'Martina',   color: '#6be0a0', brand: 'korczewski' },
-  { key: 'portrait-oskar',     label: 'Oskar',     color: '#c8a96e', brand: 'korczewski' },
-];
+// Gerald 18.10.2026: Familienfotos (Patricks Portraits) gehören nicht ins Brett und
+// wurden entfernt. Die Schnellauswahl bleibt als leere Liste bestehen.
+export const NAMED_PERSONS: Array<{ key: string; label: string; color: string; brand?: string }> = [];
 
 export function buildPersonsPanel(persons: Array<{ key: string; label: string; color: string; brand?: string }>): void {
   const grid = document.getElementById('fig-panel-persons');
