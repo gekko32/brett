@@ -4,6 +4,7 @@
 
 import * as THREE from 'three';
 import { tickFigurStil } from './figur-stil';
+import { tickBewegung } from './bewegung';
 import { STATE, ui, getWs, isWsReady, currentUser, activeLocks } from './state';
 import { initScene, leistenHoehe } from './scene';
 import * as mannequin from './mannequin';
@@ -420,6 +421,8 @@ export async function bootBoard(): Promise<void> {
     const dt = Math.min(0.05, (now - lastTickMs) / 1000);
     lastTickMs = now;
     mannequin.tickSpring(dt);
+    // Hinwenden, Gehen, Gleiten (vor dem Nachführen der Mannequin-Knochen).
+    tickBewegung(dt);
     // Figurenart abgleichen, Mannequin-Knochen den Gelenken nachführen.
     tickFigurStil();
     if (!isReplayMode) updateLinePositions();

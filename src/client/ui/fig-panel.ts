@@ -6,6 +6,7 @@ import { showExportToast } from './export-toast';
 import { edgeTabVisible, degToRad, radToDeg } from '../figure-drag';
 import { syncPersonDetails } from './person-details';
 import { meldeAuswahl } from '../steuerpult-sync';
+import { drehenSanft } from '../bewegung';
 
 /**
  * D5: user-visible notice when a figure is spawned while the WebSocket is not
@@ -59,8 +60,7 @@ export function rotateSelected(deltaDeg: number): void {
   const fig = STATE.figures.find(f => f.id === STATE.selectedId);
   if (!fig) return;
   const facingY = (fig.facingY || 0) + degToRad(deltaDeg);
-  fig.facingY = facingY;
-  fig.root.rotation.y = facingY;
+  drehenSanft(fig, facingY); // Hinwenden statt Springen (bewegung.ts)
   sendMove(fig.id, fig.root.position.x, fig.root.position.z, facingY);
   const slider = document.getElementById('fig-rotate-slider') as HTMLInputElement | null;
   if (slider) slider.value = String(((Math.round(radToDeg(facingY)) % 360) + 360) % 360);

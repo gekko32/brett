@@ -3,6 +3,7 @@ import type { ServerMessage } from '../types/messages';
 import { updateExportCache } from './ui/export';
 import * as mannequin from './mannequin';
 import { PRESETS } from './presets';
+import { zielSetzen } from './bewegung';
 import { toExportFig } from './ws-export-mappers';
 
 // Figure-lifecycle cases of onWsMessage (add/update/move/jump/delete,
@@ -88,12 +89,8 @@ export function handleFigureMessage(msg: ServerMessage, ctx: FigureMsgCtx): void
     case 'move': {
       const fig = STATE.figures.find(f => f.id === msg.id);
       if (!fig) break;
-      fig.root.position.x = msg.x;
-      fig.root.position.z = msg.z;
-      if (typeof msg.facingY === 'number') {
-        fig.facingY = msg.facingY;
-        fig.root.rotation.y = fig.facingY;
-      }
+      // Animationen (bewegung.ts): gleiten und sich hinwenden statt springen.
+      zielSetzen(fig, msg.x, msg.z, typeof msg.facingY === 'number' ? msg.facingY : undefined);
       mannequin.resolveCollisions(fig, mannequin.BOUNCE_K_DRAG);
       // Export-Cache mit aktuellen STATE.figures synchronisieren:
       updateExportCache({ figures: STATE.figures.map(toExportFig) });
