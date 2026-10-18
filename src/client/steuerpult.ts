@@ -22,7 +22,7 @@ import { ebeneText, ebeneHinweis, rolleText, ereignisText, artText, bodenText } 
 type Fig = {
   id: string; x: number; z: number; facingY?: number; label?: string; color?: string;
   scale?: number; role?: string; opacity?: number; preset?: string; person?: PersonAngaben;
-  appearance?: any; hidden?: boolean;
+  appearance?: any; hidden?: boolean; note?: string;
 };
 
 const room = new URLSearchParams(location.search).get('room') || '';
@@ -131,6 +131,11 @@ function empfangen(m: any): void {
     case 'line_type_changed': {
       const l = linien.get(m.lineId);
       if (l) linien.set(m.lineId, { ...l, lineType: m.lineType });
+      break;
+    }
+    case 'figure_note_changed': {
+      const f = figuren.get(m.figureId);
+      if (f) figuren.set(m.figureId, { ...f, note: m.note });
       break;
     }
     case 'lobby_settings_change':
@@ -483,8 +488,22 @@ function figurBlock(): HTMLElement | null {
     h('div', { class: 'klein' }, t('looks.face')), gesichter,
     zubehoer('head'), zubehoer('upper'), zubehoer('feet'));
 
+  // Notiz/Statement (Sprechblase über der Figur) – bisher nur im Figurenfeld des Spielfelds.
+  const notiz = h('textarea', { rows: '2', maxlength: '1000', placeholder: t('fig.notePh'),
+    style: { width: '100%', resize: 'vertical', background: 'var(--bg)', color: 'var(--fg)', border: '1px solid var(--line)', borderRadius: '6px', padding: '5px 7px', font: 'inherit' } }) as HTMLTextAreaElement;
+  notiz.value = f.note || '';
+  let notizZeit: ReturnType<typeof setTimeout> | null = null;
+  notiz.addEventListener('input', () => {
+    if (notizZeit) clearTimeout(notizZeit);
+    notizZeit = setTimeout(() => {
+      const akt = figuren.get(id); if (akt) figuren.set(id, { ...akt, note: notiz.value });
+      senden({ type: 'figure_note_set', figureId: id, note: notiz.value });
+    }, 400);
+  });
+
   const allgemein = h('div', {},
     h('label', { class: 'feld' }, t('pult.name'), name),
+    h('label', { class: 'feld' }, t('fig.noteLong'), notiz),
     h('label', { class: 'feld' }, t('pult.rotate'), drehReihe),
     h('label', { class: 'feld' }, t('pose.label'), haltung),
     h('label', { class: 'feld' }, t('pult.color'), farben),

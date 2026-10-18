@@ -64,7 +64,6 @@ function ensureBadge(): HTMLDivElement {
   };
   // Lazy imports: vermeidet Zyklen und frühes Laden von THREE.
   knopf('⟲', 'tool.rotateLeft', () => { import('./fig-panel').then(m => m.rotateSelected(45)); });
-  knopf('✎', 'tool.edit', () => { import('./fig-panel').then(m => m.openFigPanel()); });
   knopf('⟳', 'tool.rotateRight', () => { import('./fig-panel').then(m => m.rotateSelected(-45)); });
   document.body.appendChild(el);
   badgeEl = el;

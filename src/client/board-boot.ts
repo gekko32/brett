@@ -121,6 +121,13 @@ export async function bootBoard(): Promise<void> {
   initSessionPanel();
   initSteuerpultSync();
   initMenue();
+  // Gerald 18.10.2026: Was das Steuerpult kann, verschwindet aus dem Spielfeld
+  // (Sitzung ▾, ＋ Figur ▾ samt „Figur bearbeiten“, ✦ Aussehen). Nur ausgeblendet –
+  // die Module dahinter liefern weiter Auswahl, Hinzufügen und Drehen.
+  for (const id of ['session-btn', 'fig-panel-wrap', 'fig-panel-edge-tab', 'appearance-btn', 'appearance-drawer']) {
+    const e = document.getElementById(id);
+    if (e) e.style.display = 'none';
+  }
 
   // ── Coachee late-join UI (T000555) ─────────────────────────────────
   const inviteSlot = document.getElementById('topbar-invite-slot');
