@@ -22,7 +22,7 @@ import { ebeneText, ebeneHinweis, rolleText, ereignisText, artText, bodenText } 
 type Fig = {
   id: string; x: number; z: number; facingY?: number; label?: string; color?: string;
   scale?: number; role?: string; opacity?: number; preset?: string; person?: PersonAngaben;
-  appearance?: any; hidden?: boolean; note?: string; boneOverrides?: Record<string, { x: number; z: number }>;
+  appearance?: any; hidden?: boolean; note?: string; koerper?: string | null; boneOverrides?: Record<string, { x: number; z: number }>;
 };
 
 const room = new URLSearchParams(location.search).get('room') || '';
@@ -45,6 +45,10 @@ const ZUBEHOER: Record<'head' | 'upper' | 'feet', string[]> = {
   feet: ['shoes-dress', 'boots-work', 'sandals', 'barefoot'],
 };
 type Reiter = 'allgemein' | 'person' | 'aussehen' | 'beziehungen';
+// Figurenbibliothek: Körper der Mannequin-Figuren (public/assets/figuren, blender/figuren_erzeugen.py).
+const KOERPER = ['mann', 'frau', 'neutral', 'mann_kraeftig', 'frau_kraeftig', 'mann_schlank', 'frau_schlank',
+  'jugend_m', 'jugend_w', 'kind', 'kleinkind', 'aelter_mann', 'aelter_frau', 'aelter_neutral', 'hochbetagt'];
+const KOERPER_GROESSE_VORSCHLAG: Record<string, number> = { kind: 0.7, kleinkind: 0.5, jugend_m: 0.85, jugend_w: 0.85 };
 let reiter: Reiter = 'allgemein';
 
 const FARBEN = ['#4f7cac', '#c0607a', '#8a7fa8', '#6fb38a', '#e0b04a', '#b05a3c', '#6b6f78', '#b8c0a8'];
@@ -574,7 +578,20 @@ function figurBlock(): HTMLElement | null {
     s.addEventListener('change', () => setzeA({ accessories: { [slot]: s.value || null } }));
     return h('label', { class: 'feld' }, t('looks.' + slot), s);
   };
+  // Figurenbibliothek (Mannequin): Körper fest wählen, sonst automatisch nach Rolle/Name.
+  const koerperWahl = h('select', {},
+    h('option', { value: '' }, t('koerper.auto')),
+    ...KOERPER.map(k => h('option', { value: k, selected: f.koerper === k }, t('koerper.' + k)))) as HTMLSelectElement;
+  koerperWahl.addEventListener('change', () => {
+    const k = koerperWahl.value || null;
+    const aenderung: Partial<Fig> = { koerper: k };
+    // Kinder/Jugendliche gleich in passender Größe (Regler bleibt frei verstellbar).
+    if (k && KOERPER_GROESSE_VORSCHLAG[k]) aenderung.scale = KOERPER_GROESSE_VORSCHLAG[k];
+    aendern(id, aenderung); zeichnen(true);
+  });
   const aussehen = h('div', {},
+    h('label', { class: 'feld' }, t('koerper.title'), koerperWahl),
+    h('div', { class: 'klein' }, t('koerper.hint')),
     h('div', { class: 'klein' }, t('looks.face')), gesichter,
     zubehoer('head'), zubehoer('upper'), zubehoer('feet'));
 

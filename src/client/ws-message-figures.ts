@@ -33,6 +33,8 @@ export function applyScaleAndColor(fig: any, src: any): void {
   if (typeof src.role === 'string') fig.role = src.role;
   // Geschlecht (Genogramm) bestimmt beim Mannequin die Körperform (figur-stil.ts).
   if (typeof src.geschlecht === 'string') fig.geschlecht = src.geschlecht;
+  // Figurenbibliothek: fest gewählter Körper (null = automatisch nach Rolle).
+  if ('koerper' in src) fig.koerper = typeof src.koerper === 'string' ? src.koerper : undefined;
   if (typeof src.opacity === 'number') fig.opacity = src.opacity;
   // Personenangaben (Geburts-/Todesjahr, Ereignisse, in der Aufstellung).
   if (src.person && typeof src.person === 'object') fig.person = src.person;

@@ -47,6 +47,14 @@ KLEIDUNG = {
     "neutral": ["male_casualsuit04", "shoes02"],
     "aelter_neutral": ["male_casualsuit04", "shoes02"],
     "kind": ["male_casualsuit04", "shoes02"],
+    "jugend_m": ["male_casualsuit04", "shoes02"],
+    "jugend_w": ["female_casualsuit01", "shoes02"],
+    "kleinkind": ["male_casualsuit04", "shoes02"],
+    "mann_kraeftig": ["male_casualsuit02", "shoes02"],
+    "frau_kraeftig": ["female_elegantsuit01", "shoes02"],
+    "mann_schlank": ["male_casualsuit02", "shoes02"],
+    "frau_schlank": ["female_casualsuit01", "shoes02"],
+    "hochbetagt": ["male_casualsuit02", "shoes02"],
 }
 
 # MakeHuman-Makros: gender 0 = weiblich, 1 = männlich; age 0,5 ≈ 25 Jahre,
@@ -59,6 +67,15 @@ VARIANTEN = {
     "aelter_mann": {"gender": 1.0, "age": 0.85, "height": 0.5},
     "aelter_frau": {"gender": 0.0, "age": 0.85, "height": 0.45},
     "aelter_neutral": {"gender": 0.5, "age": 0.85},
+    # Figurenbibliothek (Gerald 18.10.2026): weitere Körperformen, im Steuerpult wählbar
+    "jugend_m": {"gender": 1.0, "age": 0.3},
+    "jugend_w": {"gender": 0.0, "age": 0.3},
+    "kleinkind": {"gender": 0.5, "age": 0.06},
+    "mann_kraeftig": {"gender": 1.0, "age": 0.55, "weight": 0.85, "muscle": 0.6},
+    "frau_kraeftig": {"gender": 0.0, "age": 0.55, "weight": 0.85},
+    "mann_schlank": {"gender": 1.0, "age": 0.45, "weight": 0.15},
+    "frau_schlank": {"gender": 0.0, "age": 0.45, "weight": 0.15},
+    "hochbetagt": {"gender": 0.5, "age": 1.0},
 }
 
 

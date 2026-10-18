@@ -201,6 +201,235 @@
         "age": 0.85
       },
       "groesseKB": 406
+    },
+    "jugend_m": {
+      "datei": "jugend_m.glb",
+      "kleidung": [
+        "male_casualsuit04",
+        "shoes02"
+      ],
+      "dreieckeGesamt": 10999,
+      "hoehe": 1.5099,
+      "boden": -0.0148,
+      "dreiecke": 5999,
+      "dreieckeVorher": 17256,
+      "knochen": 53,
+      "kopf": {
+        "mitte": [
+          0.0001,
+          1.3874,
+          0.0567
+        ],
+        "vorn": 0.1581,
+        "hoehe": 0.2154,
+        "breite": 0.1632
+      },
+      "makros": {
+        "gender": 1.0,
+        "age": 0.3
+      },
+      "groesseKB": 406
+    },
+    "jugend_w": {
+      "datei": "jugend_w.glb",
+      "kleidung": [
+        "female_casualsuit01",
+        "shoes02"
+      ],
+      "dreieckeGesamt": 10999,
+      "hoehe": 1.3946,
+      "boden": -0.0094,
+      "dreiecke": 6000,
+      "dreieckeVorher": 17012,
+      "knochen": 53,
+      "kopf": {
+        "mitte": [
+          0.0,
+          1.2872,
+          0.0423
+        ],
+        "vorn": 0.1353,
+        "hoehe": 0.1958,
+        "breite": 0.1518
+      },
+      "makros": {
+        "gender": 0.0,
+        "age": 0.3
+      },
+      "groesseKB": 403
+    },
+    "kleinkind": {
+      "datei": "kleinkind.glb",
+      "kleidung": [
+        "male_casualsuit04",
+        "shoes02"
+      ],
+      "dreieckeGesamt": 11000,
+      "hoehe": 0.8683,
+      "boden": -0.008,
+      "dreiecke": 6000,
+      "dreieckeVorher": 17256,
+      "knochen": 53,
+      "kopf": {
+        "mitte": [
+          -0.0,
+          0.7823,
+          0.026
+        ],
+        "vorn": 0.1024,
+        "hoehe": 0.1559,
+        "breite": 0.1319
+      },
+      "makros": {
+        "gender": 0.5,
+        "age": 0.06
+      },
+      "groesseKB": 405
+    },
+    "mann_kraeftig": {
+      "datei": "mann_kraeftig.glb",
+      "kleidung": [
+        "male_casualsuit02",
+        "shoes02"
+      ],
+      "dreieckeGesamt": 11000,
+      "hoehe": 1.7424,
+      "boden": -0.0163,
+      "dreiecke": 6000,
+      "dreieckeVorher": 15816,
+      "knochen": 53,
+      "kopf": {
+        "mitte": [
+          0.0001,
+          1.6097,
+          0.0577
+        ],
+        "vorn": 0.1666,
+        "hoehe": 0.2329,
+        "breite": 0.1709
+      },
+      "makros": {
+        "gender": 1.0,
+        "age": 0.55,
+        "weight": 0.85,
+        "muscle": 0.6
+      },
+      "groesseKB": 407
+    },
+    "frau_kraeftig": {
+      "datei": "frau_kraeftig.glb",
+      "kleidung": [
+        "female_elegantsuit01",
+        "shoes02"
+      ],
+      "dreieckeGesamt": 11000,
+      "hoehe": 1.6007,
+      "boden": -0.0107,
+      "dreiecke": 6000,
+      "dreieckeVorher": 17218,
+      "knochen": 53,
+      "kopf": {
+        "mitte": [
+          0.0,
+          1.4846,
+          0.0562
+        ],
+        "vorn": 0.1549,
+        "hoehe": 0.2107,
+        "breite": 0.1619
+      },
+      "makros": {
+        "gender": 0.0,
+        "age": 0.55,
+        "weight": 0.85
+      },
+      "groesseKB": 409
+    },
+    "mann_schlank": {
+      "datei": "mann_schlank.glb",
+      "kleidung": [
+        "male_casualsuit02",
+        "shoes02"
+      ],
+      "dreieckeGesamt": 11000,
+      "hoehe": 1.6865,
+      "boden": -0.0158,
+      "dreiecke": 6000,
+      "dreieckeVorher": 15816,
+      "knochen": 53,
+      "kopf": {
+        "mitte": [
+          0.0001,
+          1.5568,
+          0.0581
+        ],
+        "vorn": 0.1651,
+        "hoehe": 0.2277,
+        "breite": 0.1694
+      },
+      "makros": {
+        "gender": 1.0,
+        "age": 0.45,
+        "weight": 0.15
+      },
+      "groesseKB": 406
+    },
+    "frau_schlank": {
+      "datei": "frau_schlank.glb",
+      "kleidung": [
+        "female_casualsuit01",
+        "shoes02"
+      ],
+      "dreieckeGesamt": 10999,
+      "hoehe": 1.5494,
+      "boden": -0.0097,
+      "dreiecke": 5999,
+      "dreieckeVorher": 17012,
+      "knochen": 53,
+      "kopf": {
+        "mitte": [
+          0.0001,
+          1.4365,
+          0.0503
+        ],
+        "vorn": 0.1477,
+        "hoehe": 0.2063,
+        "breite": 0.1598
+      },
+      "makros": {
+        "gender": 0.0,
+        "age": 0.45,
+        "weight": 0.15
+      },
+      "groesseKB": 403
+    },
+    "hochbetagt": {
+      "datei": "hochbetagt.glb",
+      "kleidung": [
+        "male_casualsuit02",
+        "shoes02"
+      ],
+      "dreieckeGesamt": 11000,
+      "hoehe": 1.6518,
+      "boden": -0.0138,
+      "dreiecke": 6000,
+      "dreieckeVorher": 15816,
+      "knochen": 53,
+      "kopf": {
+        "mitte": [
+          0.0001,
+          1.5228,
+          0.0689
+        ],
+        "vorn": 0.1716,
+        "hoehe": 0.2303,
+        "breite": 0.1617
+      },
+      "makros": {
+        "gender": 0.5,
+        "age": 1.0
+      },
+      "groesseKB": 406
     }
   }
 }

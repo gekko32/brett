@@ -35,6 +35,8 @@ export function setGesichtNeuAnbringen(fn: (fig: any) => void): void { gesichtNe
 
 // ── Auswahl der Mannequin-Variante ──────────────────────────────────────────
 export function varianteFuer(fig: any): string {
+  // Figurenbibliothek: im Steuerpult fest gewählter Körper hat Vorrang.
+  if (typeof fig.koerper === 'string' && /^[a-z_]+$/.test(fig.koerper)) return fig.koerper;
   const role: string = fig.role || '';
   const label: string = fig.label || '';
   const body: string = fig.appearance?.body || '';
@@ -130,18 +132,23 @@ function verfeinertBauen(fig: any): void {
 // ── Stufe b: Mannequin aus GLB ──────────────────────────────────────────────
 const ZIEL_HOEHE = 2.0; // wie die klassische Figur (Fuß bis Scheitel)
 const HAUTTON = '#d9cbbb'; // neutral, kein bestimmter Hauttyp
-type FigurInfo = { datei: string; hoehe: number; boden?: number; kopf?: { mitte: number[]; vorn: number; breite: number } };
+type FigurInfo = { datei: string; hoehe: number; boden?: number; groesseKB?: number; dreieckeGesamt?: number; kopf?: { mitte: number[]; vorn: number; breite: number } };
 let infoPromise: Promise<Record<string, FigurInfo>> | null = null;
 const modellCache = new Map<string, Promise<any>>();
 
 function infos(): Promise<Record<string, FigurInfo>> {
-  infoPromise ??= fetch('/assets/figuren/figuren.json').then(r => r.json()).then(j => j.figuren || {});
+  // Immer frisch nachfragen (no-cache): Nach einem Update kennt sonst ein alter
+  // Zwischenspeicher neue Körper nicht.
+  infoPromise ??= fetch('/assets/figuren/figuren.json', { cache: 'no-cache' }).then(r => r.json()).then(j => j.figuren || {})
+    .catch((err) => { infoPromise = null; throw err; });
   return infoPromise;
 }
-function modell(name: string): Promise<any> {
+function modell(name: string, info: FigurInfo): Promise<any> {
   if (!modellCache.has(name)) {
+    // Versionskennung aus den Messwerten: ändert sich, wenn die Figur neu erzeugt wurde.
+    const v = (info.groesseKB ?? 0) + '-' + (info.dreieckeGesamt ?? 0);
     modellCache.set(name, import('three/examples/jsm/loaders/GLTFLoader.js').then(({ GLTFLoader }) =>
-      new GLTFLoader().loadAsync('/assets/figuren/' + name + '.glb')));
+      new GLTFLoader().loadAsync('/assets/figuren/' + name + '.glb?v=' + v)));
   }
   return modellCache.get(name)!;
 }
@@ -162,13 +169,15 @@ const ELTERN: Record<string, string | null> = {
 };
 
 async function mannequinBauen(fig: any, variante: string, schluessel: string): Promise<void> {
-  const [alle, gltf, { clone }] = await Promise.all([
-    infos(), modell(variante), import('three/examples/jsm/utils/SkeletonUtils.js'),
+  const alle = await infos();
+  const info = alle[variante];
+  // Unbekannter Körper → Fehler → ersatzweise „verfeinert“ (siehe anwenden), nie unsichtbar.
+  if (!info) throw new Error('Körper unbekannt: ' + variante);
+  const [gltf, { clone }] = await Promise.all([
+    modell(variante, info), import('three/examples/jsm/utils/SkeletonUtils.js'),
   ]);
   // Inzwischen anders entschieden (Stil gewechselt, Figur gelöscht)?
   if (fig._stilSchluessel !== schluessel || !fig.root.parent) return;
-  const info = alle[variante];
-  if (!info) return;
 
   const k = ZIEL_HOEHE / info.hoehe;
   const huelle = new THREE.Group();
@@ -195,7 +204,7 @@ async function mannequinBauen(fig: any, variante: string, schluessel: string): P
       if (o.isSkinnedMesh) mitSkelett = true;
     }
   });
-  if (!mitSkelett) return;
+  if (!mitSkelett) throw new Error('Modell ohne Skelett: ' + variante);
 
   // Ruhelage: Knochenpositionen (im Raum der Figur) und Ruhe-Versatz der Drehung.
   fig.root.updateMatrixWorld(true);
@@ -207,7 +216,7 @@ async function mannequinBauen(fig: any, variante: string, schluessel: string): P
     const kn = szene.getObjectByName(name);
     if (kn) knochenVon.set(gelenk, kn);
   }
-  if (knochenVon.size !== ZUORDNUNG.length) return;
+  if (knochenVon.size !== ZUORDNUNG.length) throw new Error('Skelett unvollständig: ' + variante);
 
   // Gelenk-Gruppen auf die Gelenke des Modells setzen (Kopf: Kopfmitte).
   positionenMerken(fig);
@@ -276,7 +285,7 @@ function anwenden(fig: any, schluessel: string): void {
     nachUmbau(fig);
     mannequinBauen(fig, schluessel.split(':')[1], schluessel).catch((e) => {
       console.warn('[brett] Mannequin konnte nicht geladen werden, nutze verfeinert', e);
-      if (fig._stilSchluessel === schluessel) { verfeinertBauen(fig); nachUmbau(fig); }
+      if (fig._stilSchluessel === schluessel) { teileEntfernen(fig); positionenZurueck(fig); verfeinertBauen(fig); nachUmbau(fig); }
     });
   }
 }
