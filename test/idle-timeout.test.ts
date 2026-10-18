@@ -1,0 +1,66 @@
+// brett/test/idle-timeout.test.ts
+import { test } from 'node:test';
+import assert from 'node:assert';
+import {
+  applyMutation,
+  buildStateFromMutations,
+  touchSessionActivity,
+  checkSessionIdle,
+  checkAllSessions,
+} from '../src/server/index';
+import { IDLE_TIMEOUT_MS } from '../src/server/sessions';
+// Grenzwert nicht fest eintragen (war 2 min, jetzt 6 h; Coaching-Sitzungen).
+const UEBER_GRENZE = IDLE_TIMEOUT_MS + 60_000;
+
+test('touchSessionActivity: updates __session_last_activity__', () => {
+  const room = 'idle-test-1';
+  applyMutation(room, { type: 'session_phase_set', phase: 'active' });
+  const before = buildStateFromMutations(room).sessionLastActivity;
+  touchSessionActivity(room);
+  const after = buildStateFromMutations(room).sessionLastActivity;
+  assert.notStrictEqual(before, after);
+});
+
+test('checkSessionIdle: returns {ended:true} when no activity > IDLE_TIMEOUT_MS', () => {
+  const room = 'idle-test-2';
+  applyMutation(room, { type: 'session_phase_set', phase: 'active' });
+  const oldTs = new Date(Date.now() - UEBER_GRENZE).toISOString(); // > Grenzwert
+  applyMutation(room, { type: 'session_last_activity_set', ts: oldTs });
+  const result = checkSessionIdle(room);
+  assert.strictEqual(result.ended, true);
+  assert.strictEqual(result.reason, 'idle-timeout');
+  assert.strictEqual(buildStateFromMutations(room).sessionPhase, 'ended');
+});
+
+test('checkSessionIdle: returns {ended:false} when within IDLE_TIMEOUT_MS', () => {
+  const room = 'idle-test-3';
+  applyMutation(room, { type: 'session_phase_set', phase: 'active' });
+  applyMutation(room, { type: 'session_last_activity_set', ts: new Date().toISOString() });
+  const result = checkSessionIdle(room);
+  assert.strictEqual(result.ended, false);
+});
+
+test('checkSessionIdle: lobby phase is exempt (open lobby never swept to ended)', () => {
+  const room = 'idle-test-lobby';
+  applyMutation(room, { type: 'session_phase_set', phase: 'lobby' });
+  applyMutation(room, { type: 'session_last_activity_set',
+    ts: new Date(Date.now() - UEBER_GRENZE).toISOString() }); // > Grenzwert
+  const result = checkSessionIdle(room);
+  assert.strictEqual(result.ended, false);
+  assert.strictEqual(buildStateFromMutations(room).sessionPhase, 'lobby', 'phase stays lobby');
+});
+
+test('checkAllSessions: iterates and ends idle rooms only', () => {
+  const idleRoom = 'idle-test-4-idle';
+  const liveRoom = 'idle-test-4-live';
+  applyMutation(idleRoom, { type: 'session_phase_set', phase: 'active' });
+  applyMutation(idleRoom, { type: 'session_last_activity_set',
+    ts: new Date(Date.now() - UEBER_GRENZE).toISOString() });
+  applyMutation(liveRoom, { type: 'session_phase_set', phase: 'active' });
+  applyMutation(liveRoom, { type: 'session_last_activity_set', ts: new Date().toISOString() });
+  const results = checkAllSessions();
+  const idleResult = results.find((r: any) => r.room === idleRoom);
+  const liveResult = results.find((r: any) => r.room === liveRoom);
+  assert.strictEqual(idleResult!.ended, true);
+  assert.strictEqual(liveResult?.ended ?? false, false);
+});
