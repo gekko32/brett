@@ -349,7 +349,9 @@ export function pickContact(ev: { clientX: number; clientY: number }): any {
   raycaster.setFromCamera(ndc, camera);
   const meshes: any[] = [];
   for (const fig of STATE.figures) {
-    fig.root.traverse((o: any) => { if (o.userData && o.userData.isContact) meshes.push(o); });
+    // Nur sichtbare Gelenkpunkte (bei Verfeinert/Mannequin nur an der ausgewählten Figur).
+    if (!fig.root.visible) continue;
+    fig.root.traverse((o: any) => { if (o.userData && o.userData.isContact && o.visible) meshes.push(o); });
   }
   const hit = raycaster.intersectObjects(meshes, false)[0];
   return hit ? hit.object : null;

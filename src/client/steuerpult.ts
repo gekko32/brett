@@ -22,7 +22,7 @@ import { ebeneText, ebeneHinweis, rolleText, ereignisText, artText, bodenText } 
 type Fig = {
   id: string; x: number; z: number; facingY?: number; label?: string; color?: string;
   scale?: number; role?: string; opacity?: number; preset?: string; person?: PersonAngaben;
-  appearance?: any; hidden?: boolean; note?: string;
+  appearance?: any; hidden?: boolean; note?: string; boneOverrides?: Record<string, { x: number; z: number }>;
 };
 
 const room = new URLSearchParams(location.search).get('room') || '';
@@ -478,7 +478,7 @@ function figurBlock(): HTMLElement | null {
     knopf('⟲', () => { drehen(id, 45); zeichnen(true); }, 'dreh'), blick, knopf('⟳', () => { drehen(id, -45); zeichnen(true); }, 'dreh'));
 
   const haltung = h('div', { class: 'raster3' }, ...HALTUNGEN.map(([p, k]) =>
-    knopf(t(k), () => { aendern(id, { preset: naechsteHaltung(f.preset, p) }); zeichnen(); }, f.preset === p ? 'aktiv' : '')));
+    knopf(t(k), () => { aendern(id, { preset: naechsteHaltung(f.preset, p), boneOverrides: {} }); zeichnen(); }, f.preset === p ? 'aktiv' : '')));
 
   const farben = h('div', { class: 'farben' }, ...FARBEN.map(c =>
     h('button', { type: 'button', class: 'farbe' + (f.color === c ? ' aktiv' : ''), style: { background: c }, title: c,

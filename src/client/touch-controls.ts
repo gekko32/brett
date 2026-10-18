@@ -156,9 +156,7 @@ export function initBoardTouchControls(deps: TouchControlsDeps): void {
       const fig = STATE.figures.find(f => f.id === d.figId);
       if (fig) {
         if (d.kind === 'bone') {
-          const chain = mannequin.IK_CHAINS[d.boneName] || [];
-          for (const b of chain) delete fig.boneOverrides[b];
-          delete fig.boneOverrides[d.boneName];
+          // Stellung behalten (wie Maus, figure-drag.ts).
           wsClient.sendUpdate(fig, { boneOverrides: fig.boneOverrides });
           // E7: Touch teilt denselben Snap-Hook wie die Maus.
           snapping.finishDrag(fig);

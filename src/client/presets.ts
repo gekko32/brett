@@ -83,6 +83,8 @@ export function applyPreset(figId: string, presetKey: string): void {
     fig.bone[name].targetRot.z = p[name].z;
   }
   (fig as any).preset = key;
-  sendUpdate(fig, { preset: key });
+  // Gezogene Gelenke gehören zur vorigen Stellung → zurücksetzen.
+  fig.boneOverrides = {};
+  sendUpdate(fig, { preset: key, boneOverrides: {} });
 
 }

@@ -263,6 +263,7 @@ function anwenden(fig: any, schluessel: string): void {
   teileEntfernen(fig);
   positionenZurueck(fig);
   fig._stilSchluessel = schluessel;
+  fig._griffeSichtbar = undefined; // Griffpunkte im nächsten Bild neu setzen
   if (schluessel === 'klassisch') {
     klassischeTeile(fig, true);
     nachUmbau(fig);
@@ -287,5 +288,16 @@ export function tickFigurStil(): void {
     const soll = wunschSchluessel(fig);
     if ((fig._stilSchluessel ?? 'klassisch') !== soll) anwenden(fig, soll);
     if (fig._modell) posenAbgleichen(fig);
+    // Gelenke ziehen: Griffpunkte nur an der ausgewählten Figur (klassisch: immer).
+    if (soll !== 'klassisch') {
+      const zeigen = fig.id === STATE.selectedId;
+      if (fig._griffeSichtbar !== zeigen) {
+        fig._griffeSichtbar = zeigen;
+        fig.root.traverse((o: any) => { if (o.userData?.isContact) { o.visible = zeigen; o.scale.setScalar(0.75); } });
+      }
+    } else if (fig._griffeSichtbar !== undefined) {
+      fig._griffeSichtbar = undefined;
+      fig.root.traverse((o: any) => { if (o.userData?.isContact) o.scale.setScalar(1); });
+    }
   }
 }

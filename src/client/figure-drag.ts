@@ -223,9 +223,9 @@ export function initFigureDrag(deps: FigureDragDeps): void {
     const fig = STATE.figures.find((f) => f.id === d.figId);
     if (fig) {
       if (d.kind === 'bone') {
-        const chain = mannequin.IK_CHAINS[d.boneName] || [];
-        for (const b of chain) delete fig.boneOverrides[b];
-        delete fig.boneOverrides[d.boneName];
+        // Gelenke ziehen (Gerald 18.10.2026): Die neue Stellung bleibt (vorher wurde
+        // sie beim Loslassen gelöscht und das Glied federte zurück). Eine Haltung
+        // wählen setzt sie zurück (presets.ts).
         wsClient.sendUpdate(fig, { boneOverrides: fig.boneOverrides });
         snapping.finishDrag(fig);
       } else if (d.kind === 'body') {
