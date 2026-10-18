@@ -6,6 +6,7 @@ import path from 'path';
 import fs from 'fs';
 import type { Pool } from 'pg';
 import * as db from './db';
+import { PgSessionStore } from './pg-session-store';
 import * as auth from './auth';
 import * as figures from './figures';
 import * as phases from './phases';
@@ -44,14 +45,17 @@ app.set('trust proxy', 1);
 app.use(express.json({ limit: '1mb' }));
 
 const SESSION_SECRET = process.env.BRETT_SESSION_SECRET || 'dev-session-secret-change-me';
+const SESSION_MAX_AGE = 8 * 60 * 60 * 1000;
 export const sessionMiddleware = session({
   secret: SESSION_SECRET,
+  // Anmeldungen überleben Neustarts (Postgres); in Tests (MOCK_DB) wie bisher im Arbeitsspeicher.
+  ...(process.env.MOCK_DB === 'true' ? {} : { store: new PgSessionStore(() => (db.getPool() as any) || null, SESSION_MAX_AGE) }),
   resave: false,
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 8 * 60 * 60 * 1000,
+    maxAge: SESSION_MAX_AGE,
   },
 });
 

@@ -326,7 +326,11 @@ export function setFigureNoteBillboard(figureId: string, note: string): void {
   // Breiter als Lock-Badge, über Namensschild (2,2) und „ICH“-Schild (2,5).
   // Vorher 1,9 = Kopfhöhe, dadurch war die Blase halb hinter dem Kopf.
   sprite.scale.set(2.0, 0.5, 1);
-  sprite.position.set(0, 2.85, 0);
+  // U7 (18.10.2026): am selben Punkt wie das Namensschild verankert und in
+  // Bildschirmrichtung nach oben versetzt (center.y < 0) – so liegt die Blase aus
+  // jedem Blickwinkel über dem Namen, auch von schräg oben.
+  sprite.position.set(0, 2.2, 0);
+  sprite.center.set(0.5, -0.4);
 
   fig.root.add(sprite);
   noteSprites.set(figureId, sprite);

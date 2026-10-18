@@ -65,7 +65,7 @@ function updateNameLabel(fig: any): void {
     const sprite = new THREE.Sprite(mat);
     sprite.scale.set(1.2, 0.3, 1);
     sprite.position.set(0, NAME_LABEL_Y, 0);
-    sprite.renderOrder = 20;
+    sprite.renderOrder = 22; // Name immer zuoberst lesbar (U7)
     fig.root.add(sprite);
     fig._nameSprite = sprite;
   }

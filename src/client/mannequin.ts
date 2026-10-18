@@ -258,7 +258,9 @@ export function makeMannequin(id?: string, position = { x: 0, z: 0 }, opts: any 
   labelTex.minFilter = THREE.LinearFilter;
   const labelSpriteMat = new THREE.SpriteMaterial({ map: labelTex, transparent: true, depthTest: false, depthWrite: false });
   const labelSprite = new THREE.Sprite(labelSpriteMat);
-  labelSprite.position.y = 2.5; // über dem Namensschild (NAME_LABEL_Y 2.2)
+  // Über Namensschild und Sprechblase, in Bildschirmrichtung versetzt (U7).
+  labelSprite.position.y = 2.2;
+  labelSprite.center.set(0.5, -1.5);
   labelSprite.renderOrder = 20;
   labelSprite.scale.set(2.0, 0.5, 1);
   labelSprite.visible = false;

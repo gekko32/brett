@@ -310,7 +310,10 @@ export function attachWsServer(wss: WebSocketServer, deps: WsDeps): void {
 
           if (deps.logEvent) {
             const { type: _type, ...safePayload } = msg;
-            deps.logEvent(room, getSessionCode(room, deps), msg.type, safePayload);
+            // Urheber festhalten (Gerald 18.10.2026: Rätsel vom 16.10., wer Figuren
+            // in einem Raum verändert hatte). _von bleibt im Protokoll, nicht im Brett.
+            const von = { userId: ws._session?.userId ?? resolvePlayerId(ws) ?? null, name: ws._session?.name ?? null };
+            deps.logEvent(room, getSessionCode(room, deps), msg.type, { ...safePayload, _von: von });
           }
 
           if (deps.captureBeforeSnapshot && deps.captureAfterSnapshot && deps.pushUndo && deps.getUndoStatus) {
