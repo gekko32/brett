@@ -8,13 +8,13 @@
 // Der Server schickt Änderungen nicht an den Absender zurück → alles, was das
 // Pult sendet, wird hier sofort auch lokal angewendet.
 
-import { t, initLang, applyTranslations } from './i18n';
+import { t, initLang, applyTranslations, getLang, setLang, LANGS } from './i18n';
 import {
   PERSONEN_KATALOG, KOERPER_GROESSE, KOERPER_APPEARANCE, BLASS_OPACITY, EREIGNISSE,
   freierPlatz, eindeutigerName, findeRolle, jahreText, type PersonAngaben,
   BEZIEHUNGSARTEN, BOEDEN,
 } from './person-catalog';
-import type { PultNachricht, KameraAktion } from './steuerpult-sync';
+import type { PultNachricht, KameraAktion, MenueAktion } from './steuerpult-sync';
 import { baueNavKugel } from './ui/nav-kugel';
 import { naechsteHaltung } from './presets-logik';
 import { ebeneText, ebeneHinweis, rolleText, ereignisText, artText, bodenText } from './katalog-texte';
@@ -316,12 +316,102 @@ function ansichtBlock(): HTMLElement {
     h('div', { class: 'klein' }, t('pult.cameraHint')),
     h('div', { class: 'reihe', style: { marginTop: '4px' } },
       kam('⌂ ' + t('pult.camReset'), t('pult.camReset'), 'zurueck'), kam('⬒ ' + t('pult.camTop'), t('pult.camTop'), 'draufsicht')),
+    h('div', { class: 'reihe', style: { marginTop: '4px' } },
+      knopf('◔ ' + t('pult.viewCone'), () => auftrag('blickwinkel')), knopf('🧲 ' + t('pult.magnet'), () => auftrag('magnet'))),
     h('label', { class: 'feld', style: { flexDirection: 'row', alignItems: 'center', gap: '6px' } }, bz, t('pult.showRelations')),
     h('label', { class: 'feld' }, t('pult.figures'), optWahl([['klassisch', 'figures.klassisch'], ['verfeinert', 'figures.verfeinert'], ['mannequin', 'figures.mannequin']], optik.figuren || 'klassisch', 'figuren')),
     h('label', { class: 'feld' }, t('pult.floor'), optWahl(BOEDEN.map(([k, l]) => [k, bodenText(k, l)] as [string, string]), optik.floor, 'floor', true)),
     h('label', { class: 'feld' }, t('session.sky'), optWahl([['day', 'optik.day'], ['dusk', 'optik.dusk'], ['calm', 'optik.calm']], optik.sky, 'sky')),
     h('label', { class: 'feld' }, t('session.light'), optWahl([['neutral', 'optik.neutral'], ['warm', 'optik.warm'], ['cool', 'optik.cool']], optik.lightMood, 'lightMood')),
   );
+}
+
+/** Auftrag ans Spielfeld (Bild, PDF, Datei, Blickwinkel, Magnet). */
+function auftrag(aktion: MenueAktion): void {
+  kanal?.postMessage({ type: 'menue', aktion } satisfies PultNachricht);
+}
+
+/** ☰ Menü des Spielfelds im Pult (Gerald 18.10.2026). */
+function speichernBlock(): HTMLElement {
+  const meldung = h('div', { class: 'klein' });
+  const melde = (text: string) => { meldung.textContent = text; };
+
+  // Export: entsteht im Spielfeld (dort ist das Bild)
+  const export_ = h('div', { class: 'reihe' },
+    knopf('📷 ' + t('export.png'), () => { auftrag('png'); melde(t('pult.sentToBoard')); }),
+    knopf('📄 ' + t('export.pdf'), () => { auftrag('pdf'); melde(t('pult.sentToBoard')); }),
+    knopf('{ } ' + t('export.json'), () => { auftrag('json'); melde(t('pult.sentToBoard')); }));
+
+  // Import aus Datei (ersetzt die Aufstellung → zweiter Klick bestätigt)
+  const datei = h('input', { type: 'file', accept: '.json,application/json', style: { display: 'none' } }) as HTMLInputElement;
+  let importText: string | null = null;
+  const importKnopf = knopf('📥 ' + t('pult.importJson'), () => {
+    if (importText) {
+      kanal?.postMessage({ type: 'import', text: importText } satisfies PultNachricht);
+      importText = null; importKnopf.textContent = '📥 ' + t('pult.importJson'); importKnopf.classList.remove('warn');
+      melde(t('pult.sentToBoard'));
+      return;
+    }
+    datei.click();
+  });
+  datei.addEventListener('change', async () => {
+    const fd = datei.files?.[0]; datei.value = '';
+    if (!fd) return;
+    try {
+      const text = await fd.text();
+      JSON.parse(text);
+      importText = text;
+      importKnopf.textContent = t('pult.importConfirm'); importKnopf.classList.add('warn');
+    } catch { melde('⚠ ' + t('pult.importFailed')); }
+  });
+
+  // Als Vorlage speichern (ersetzt die beiden Abfragefenster des Spielfelds)
+  const vName = h('input', { type: 'text', maxlength: '100', placeholder: t('pult.templateName') }) as HTMLInputElement;
+  const vKat = h('input', { type: 'text', maxlength: '60', placeholder: t('pult.templateCategory') }) as HTMLInputElement;
+  const vSpeichern = knopf('💾 ' + t('template.saveBtn'), async () => {
+    const name = vName.value.trim();
+    if (!name) { melde('⚠ ' + t('pult.templateName')); return; }
+    try {
+      const r = await fetch('/api/board-templates', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, category: vKat.value.trim() || null,
+          state: { figures: [...figuren.values()], lines: [...linien.values()], optik } }),
+      });
+      melde(r.ok ? '✓ ' + t('pult.templateSaved') : '⚠ ' + t('pult.templateFailed'));
+      if (r.ok) { vName.value = ''; vKat.value = ''; }
+    } catch { melde('⚠ ' + t('pult.templateFailed')); }
+  });
+
+  // Links zum Ansehen (Teilen) bzw. Zuschauen
+  const link = (pfad: string) => async () => {
+    try {
+      const r = await fetch('/api/rooms/' + encodeURIComponent(room) + '/' + pfad, { method: 'POST' });
+      if (!r.ok) { melde('⚠ ' + t('pult.linkFailed')); return; }
+      const { url } = await r.json();
+      try { await navigator.clipboard?.writeText(url); melde('✓ ' + t('pult.linkCopied')); }
+      catch { melde(url); }
+    } catch { melde('⚠ ' + t('pult.linkFailed')); }
+  };
+
+  // Zurücksetzen auf die Startaufstellung (zweiter Klick bestätigt)
+  let resetBereit = false;
+  const reset = knopf('↺ ' + t('pult.resetBoard'), () => {
+    if (!resetBereit) { resetBereit = true; reset.textContent = t('pult.resetConfirm'); reset.classList.add('warn'); return; }
+    senden({ type: 'admin_reset_board_to_default' });
+    resetBereit = false; reset.textContent = '↺ ' + t('pult.resetBoard'); reset.classList.remove('warn');
+  });
+
+  return block('teilen', t('pult.shareBlock'),
+    h('div', { class: 'klein' }, t('pult.exportHint')), export_,
+    h('div', { class: 'reihe', style: { marginTop: '4px' } }, importKnopf, datei),
+    h('hr', { style: { border: '0', borderTop: '1px solid var(--line)', margin: '8px 0' } }),
+    h('label', { class: 'feld' }, t('pult.templateSaveTitle'), vName, vKat),
+    h('div', { class: 'reihe' }, vSpeichern),
+    h('hr', { style: { border: '0', borderTop: '1px solid var(--line)', margin: '8px 0' } }),
+    h('div', { class: 'reihe' },
+      knopf('🔗 ' + t('pult.shareLink'), link('share')), knopf('👁 ' + t('pult.viewerLink'), link('zuschauer-share'))),
+    h('div', { class: 'reihe', style: { marginTop: '4px' } }, reset),
+    meldung);
 }
 
 function personenBlock(): HTMLElement {
@@ -539,9 +629,10 @@ function zeichnen(erzwingen = false): void {
   main.innerHTML = '';
   const s = sitzungBlock(); s.dataset.block = 'sitzung';
   const a = ansichtBlock(); a.dataset.block = 'ansicht';
+  const sp = speichernBlock(); sp.dataset.block = 'teilen';
   const p = personenBlock(); p.dataset.block = 'personen';
   const f = figurBlock();
-  main.append(s, a, p);
+  main.append(s, a, sp, p);
   if (f) { f.dataset.block = 'figur'; main.append(f); }
   else main.append(h('div', { class: 'klein', style: { padding: '0 4px' } }, t('pult.selectHint')));
 }
@@ -583,6 +674,15 @@ function start(): void {
     kopf.append(h('div', { class: 'tipp' }, t('pult.snapHint'), ' ',
       h('button', { type: 'button', class: 'mini', onclick: anDenRand }, t('pult.toEdge'))));
   }
+  // Sprache (vorher nur im ☰ Menü des Spielfelds): gilt für Pult, Spielfeld, Genogramm.
+  const sprache = h('select', { title: t('pult.language'), style: { width: 'auto', marginLeft: 'auto' } },
+    ...LANGS.map(l => h('option', { value: l, selected: l === getLang() }, l.toUpperCase()))) as HTMLSelectElement;
+  sprache.addEventListener('change', () => {
+    setLang(sprache.value as any);
+    kanal?.postMessage({ type: 'sprache' } satisfies PultNachricht);
+    location.reload();
+  });
+  kopf?.querySelector('.zeile')?.append(sprache);
   applyTranslations();
   document.title = `${t('pult.title')} · Systembrett`;
   if (!room) { setStatus(t('pult.noRoom')); return; }

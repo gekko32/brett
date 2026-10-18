@@ -931,6 +931,7 @@ function start(): void {
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && verbinden) verbindenUmschalten(); });
   kanal?.addEventListener('message', (e: MessageEvent<PultNachricht>) => {
     if (e.data.type === 'select' && e.data.id !== ausgewaehlt) waehlen(e.data.id, false);
+    if (e.data.type === 'sprache') location.reload();
   });
   zeichne(); panel();
   verbindenServer();

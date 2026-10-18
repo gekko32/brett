@@ -18,7 +18,18 @@ export type PultNachricht =
   | { type: 'kamera-setzen'; theta?: number; phi?: number; dist?: number }
   // Brett meldet seine Ansicht, damit Kugel und Regler mitlaufen.
   | { type: 'kamera-stand'; theta: number; phi: number; dist: number }
-  | { type: 'helligkeit'; wert: number };
+  | { type: 'helligkeit'; wert: number }
+  // ☰ Menü im Steuerpult (Gerald 18.10.2026): Aufträge, die das Spielfeld ausführt
+  // (Bild/PDF/Datei entstehen aus dem Spielfeld), Datei-Import, Sprachwechsel.
+  | { type: 'menue'; aktion: MenueAktion }
+  | { type: 'import'; text: string }
+  | { type: 'sprache' };
+
+export type MenueAktion = 'png' | 'pdf' | 'json' | 'blickwinkel' | 'magnet';
+const MENUE_KNOPF: Record<MenueAktion, string> = {
+  png: 'btn-export-png', pdf: 'btn-export-pdf', json: 'btn-export-json',
+  blickwinkel: 'btn-view-cone', magnet: 'btn-magnet',
+};
 
 const room = new URLSearchParams(location.search).get('room');
 const kanal: BroadcastChannel | null =
@@ -81,6 +92,19 @@ export function initSteuerpultSync(): void {
       if (s?.renderer) s.renderer.toneMappingExposure = 1.05 * Math.max(0.4, Math.min(2.5, m.wert));
       return;
     }
+    if (m.type === 'menue') {
+      // Die Knöpfe liegen ausgeblendet im ☰ Menü des Spielfelds – Klick löst sie aus.
+      (document.getElementById(MENUE_KNOPF[m.aktion]) as HTMLButtonElement | null)?.click();
+      return;
+    }
+    if (m.type === 'import') {
+      import('./ui/import').then(async (imp) => {
+        try { await imp.applyImportedSnapshot(imp.validateSnapshot(JSON.parse(m.text))); }
+        catch (err) { console.warn('[brett] Import aus dem Steuerpult fehlgeschlagen', err); }
+      });
+      return;
+    }
+    if (m.type === 'sprache') { location.reload(); return; }
     if (m.type === 'beziehungen') {
       import('./scene-lines').then(l => l.setBeziehungenSichtbar(m.sichtbar));
       return;
