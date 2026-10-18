@@ -30,9 +30,24 @@ if mpfb is None:
     raise SystemExit("MPFB nicht gefunden – bitte in Blender unter Erweiterungen installieren.")
 HumanService = importlib.import_module(mpfb.__name__ + ".services.humanservice").HumanService
 TargetService = importlib.import_module(mpfb.__name__ + ".services.targetservice").TargetService
+LocationService = importlib.import_module(mpfb.__name__ + ".services.locationservice").LocationService
 
-# Zielgröße je Figur (Dreiecke). 12 Figuren × 6000 sind auch für Tablets wenig.
+# Zielgröße (Dreiecke): Körper und je Kleidungsstück. 12 Figuren sind auch für Tablets wenig.
 ZIEL_DREIECKE = 6000
+ZIEL_DREIECKE_KLEIDUNG = 2500
+
+# Schlichte Kleidung (Gerald 18.10.2026) aus den MakeHuman-Systemassets (CC0,
+# makehuman_system_assets_cc0.zip, in MPFB eingespielt). Stoffbilder werden nicht
+# übernommen: Kleidung bekommt im Brett die Ebenenfarbe, Kopf/Hände einen Hautton.
+KLEIDUNG = {
+    "mann": ["male_casualsuit02", "shoes02"],
+    "aelter_mann": ["male_casualsuit02", "shoes02"],
+    "frau": ["female_casualsuit01", "shoes02"],
+    "aelter_frau": ["female_elegantsuit01", "shoes02"],
+    "neutral": ["male_casualsuit04", "shoes02"],
+    "aelter_neutral": ["male_casualsuit04", "shoes02"],
+    "kind": ["male_casualsuit04", "shoes02"],
+}
 
 # MakeHuman-Makros: gender 0 = weiblich, 1 = männlich; age 0,5 ≈ 25 Jahre,
 # 0,14 ≈ 8 Jahre, 0,85 ≈ 70 Jahre (MakeHuman-Skala).
@@ -72,8 +87,8 @@ def modifier_anwenden(obj, name):
     bpy.ops.object.modifier_apply(modifier=name)
 
 
-def neutrales_material(obj):
-    mat = bpy.data.materials.new("Figur")
+def neutrales_material(obj, name="Figur"):
+    mat = bpy.data.materials.new(name)
     mat.use_nodes = True
     bsdf = mat.node_tree.nodes.get("Principled BSDF")
     if bsdf:
@@ -105,12 +120,49 @@ def kopf_messen(obj):
     }
 
 
+def kleidung_vorbereiten(eintrag):
+    stueck, obj = eintrag
+    if obj is None:
+        return None
+    vereinfachen(obj, ZIEL_DREIECKE_KLEIDUNG)
+    obj.name = "Kleidung_" + stueck
+    neutrales_material(obj, "Kleidung")
+    return obj
+
+
+def vereinfachen(obj, ziel):
+    """Masken anwenden, auf ziel Dreiecke reduzieren, übrige Modifier (außer Skelett) entfernen."""
+    aktiv(obj)
+    for m in list(obj.modifiers):
+        if m.type == "MASK":
+            modifier_anwenden(obj, m.name)
+    vorher = dreiecke(obj)
+    if vorher > ziel:
+        dec = obj.modifiers.new("Vereinfachen", "DECIMATE")
+        dec.ratio = ziel / vorher
+        modifier_anwenden(obj, dec.name)
+    for m in list(obj.modifiers):
+        if m.type != "ARMATURE":
+            obj.modifiers.remove(m)
+    aktiv(obj)
+    bpy.ops.object.shade_smooth()
+    return vorher
+
+
 def erzeugen(name, werte, ordner):
     szene_leeren()
     makros = TargetService.get_default_macro_info_dict()
     makros.update(werte)
     koerper = HumanService.create_human(macro_detail_dict=makros)
     skelett = HumanService.add_builtin_rig(koerper, "game_engine")
+    kleidung = []
+    for stueck in KLEIDUNG.get(name, []):
+        pfad = os.path.join(LocationService.get_user_data("clothes"), stueck, stueck + ".mhclo")
+        if not os.path.isfile(pfad):
+            print(f"[figuren] Kleidung fehlt: {pfad} (makehuman_system_assets einspielen)", flush=True)
+            continue
+        obj = HumanService.add_mhclo_asset(pfad, koerper, asset_type="Clothes", subdiv_levels=0)
+        kleidung.append((stueck, obj))
 
     # Körperform fest einrechnen (Formschlüssel), Hilfsgeometrie entfernen, vereinfachen
     aktiv(koerper)
@@ -119,21 +171,22 @@ def erzeugen(name, werte, ordner):
     for m in list(koerper.modifiers):
         if m.type == "MASK":
             modifier_anwenden(koerper, m.name)
-    vorher = dreiecke(koerper)
-    if vorher > ZIEL_DREIECKE:
-        dec = koerper.modifiers.new("Vereinfachen", "DECIMATE")
-        dec.ratio = ZIEL_DREIECKE / vorher
-        modifier_anwenden(koerper, dec.name)
-    for m in list(koerper.modifiers):
-        if m.type not in ("ARMATURE",):
-            koerper.modifiers.remove(m)
-    aktiv(koerper)
-    bpy.ops.object.shade_smooth()
+    vorher = vereinfachen(koerper, ZIEL_DREIECKE)
+    koerper.name = "Koerper"
     neutrales_material(koerper)
 
-    zs = [(koerper.matrix_world @ v.co).z for v in koerper.data.vertices]
+    teile = [koerper]
+    for stueck in kleidung:
+        teil = kleidung_vorbereiten(stueck)
+        if teil is not None:
+            teile.append(teil)
+
+    # Höhe über alle Teile (Beine liegen unter der Kleidung, Schuhe bilden den Boden).
+    zs = [(t.matrix_world @ v.co).z for t in teile for v in t.data.vertices]
     info = {
         "datei": name + ".glb",
+        "kleidung": [k for k, _ in kleidung],
+        "dreieckeGesamt": sum(dreiecke(t) for t in teile),
         "hoehe": round(max(zs) - min(zs), 4),
         "boden": round(min(zs), 4),
         "dreiecke": dreiecke(koerper),
@@ -144,7 +197,8 @@ def erzeugen(name, werte, ordner):
     }
 
     bpy.ops.object.select_all(action="DESELECT")
-    koerper.select_set(True)
+    for t in teile:
+        t.select_set(True)
     skelett.select_set(True)
     bpy.context.view_layer.objects.active = skelett
     pfad = os.path.join(ordner, name + ".glb")

@@ -129,7 +129,8 @@ function verfeinertBauen(fig: any): void {
 
 // ── Stufe b: Mannequin aus GLB ──────────────────────────────────────────────
 const ZIEL_HOEHE = 2.0; // wie die klassische Figur (Fuß bis Scheitel)
-type FigurInfo = { datei: string; hoehe: number; kopf?: { mitte: number[]; vorn: number; breite: number } };
+const HAUTTON = '#d9cbbb'; // neutral, kein bestimmter Hauttyp
+type FigurInfo = { datei: string; hoehe: number; boden?: number; kopf?: { mitte: number[]; vorn: number; breite: number } };
 let infoPromise: Promise<Record<string, FigurInfo>> | null = null;
 const modellCache = new Map<string, Promise<any>>();
 
@@ -173,21 +174,28 @@ async function mannequinBauen(fig: any, variante: string, schluessel: string): P
   const huelle = new THREE.Group();
   huelle.userData.stilTeil = true;
   huelle.scale.setScalar(k);
+  huelle.position.y = -(info.boden ?? 0) * k; // Schuhsohlen genau auf den Boden
   const szene = clone(gltf.scene);
   huelle.add(szene);
   fig.root.add(huelle);
 
-  let haut: THREE.SkinnedMesh | null = null;
+  let mitSkelett = false;
   szene.traverse((o: any) => {
     if (o.isMesh) {
       o.userData.geteilteGeometrie = true; // Geometrie teilen sich alle Klone
-      o.material = new THREE.MeshStandardMaterial({ color: fig.color || '#b8c0a8', roughness: 0.7, metalness: 0 });
+      // Kleidung in der Ebenenfarbe, sichtbare Haut (Kopf, Hände) in festem neutralem Ton.
+      let istHaut = false;
+      for (let x: any = o; x && x !== szene; x = x.parent) if (/^Koerper/.test(x.name || '')) istHaut = true;
+      o.material = istHaut
+        ? new THREE.MeshStandardMaterial({ color: HAUTTON, roughness: 0.8, metalness: 0 })
+        : new THREE.MeshStandardMaterial({ color: fig.color || '#b8c0a8', roughness: 0.85, metalness: 0 });
+      if (istHaut) o.userData.festeFarbe = true;
       o.frustumCulled = false;
       o.raycast = () => { /* Klicks treffen die unsichtbaren Grundformen */ };
-      if (o.isSkinnedMesh) haut = o;
+      if (o.isSkinnedMesh) mitSkelett = true;
     }
   });
-  if (!haut) return;
+  if (!mitSkelett) return;
 
   // Ruhelage: Knochenpositionen (im Raum der Figur) und Ruhe-Versatz der Drehung.
   fig.root.updateMatrixWorld(true);

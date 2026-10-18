@@ -321,7 +321,7 @@ export function makeMannequin(id?: string, position = { x: 0, z: 0 }, opts: any 
 export function recolorFigure(fig: any, hexColor: string): void {
   const threeColor = new THREE.Color(hexColor);
   fig.root.traverse((o: any) => {
-    if (o.isMesh && !o.userData.isContact && o !== fig.ring) {
+    if (o.isMesh && !o.userData.isContact && !o.userData.festeFarbe && o !== fig.ring) {
       if (o.material) o.material.color.set(threeColor);
     }
   });
