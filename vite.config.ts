@@ -1,8 +1,26 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
+// Lokale Vorschau (npm run dev, Gerald 18.10.2026): Die Seiten binden ihre
+// Programme als "../src/client/…" ein. Beim Bauen passt das, im
+// Entwicklungsmodus suchte Vite aber unter public/src → schwarzer Bildschirm.
+// Diese Umleitung wirkt nur in der Vorschau, nicht beim Bauen.
+const srcPfad = resolve(__dirname, 'src').replace(/\\/g, '/');
+const vorschauQuellen = {
+  name: 'brett-vorschau-quellen',
+  apply: 'serve' as const,
+  transformIndexHtml: {
+    order: 'pre' as const, // vor Vites eigener Auflösung der Skriptadressen
+    handler: (html: string) => html.replace(/src="\.\.\/src\//g, `src="/@fs/${srcPfad}/`),
+  },
+};
+
+// Brett-Server für die Vorschau: Standard 3000, lokal oft 3001/3002 (Port belegt).
+const server = 'http://localhost:' + (process.env.BRETT_SERVER_PORT || '3000');
+
 export default defineConfig({
   root: 'public',
+  plugins: [vorschauQuellen],
   build: {
     outDir: '../dist/client',
     emptyOutDir: true,
@@ -19,14 +37,15 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    fs: { allow: [resolve(__dirname)] },
     proxy: {
-      '/api': 'http://localhost:3000',
-      '/auth': 'http://localhost:3000',
-      '/presets': 'http://localhost:3000',
-      '/share': 'http://localhost:3000',
-      '/zuschauer': 'http://localhost:3000',
-      '/healthz': 'http://localhost:3000',
-      '/sync': { target: 'ws://localhost:3000', ws: true },
+      '/api': server,
+      '/auth': server,
+      '/presets': server,
+      '/share': server,
+      '/zuschauer': server,
+      '/healthz': server,
+      '/sync': { target: server.replace('http', 'ws'), ws: true },
     },
   },
 });

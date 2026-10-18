@@ -67,3 +67,23 @@ jobs:
             ghcr.io/gekko32/brett:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # Danach die Auslieferung anstoßen (Gerald 18.10.2026): startet in
+      # gekko32/mentolder-prod den Render, der Server holt das neue Paket dann
+      # von selbst. Braucht das Geheimnis MENTOLDER_PROD_DISPATCH (Zugangsschlüssel
+      # nur für mentolder-prod, Recht „Actions: Read and write“). Fehlt es, gibt
+      # der Schritt nur einen Hinweis aus – dann wie bisher von Hand anstoßen.
+      - name: Auslieferung anstoßen (mentolder-prod rendern)
+        env:
+          TOKEN: ${{ secrets.MENTOLDER_PROD_DISPATCH }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::notice::MENTOLDER_PROD_DISPATCH fehlt – Render bitte von Hand anstoßen: https://github.com/gekko32/mentolder-prod/actions/workflows/render.yml"
+            exit 0
+          fi
+          curl -fsS -X POST \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/gekko32/mentolder-prod/actions/workflows/render.yml/dispatches \
+            -d '{"ref":"main"}'
+          echo "Render in mentolder-prod angestoßen."
