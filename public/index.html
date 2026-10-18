@@ -401,6 +401,9 @@
 
     /* ── T000606: Mobile-Touch-Steuerung ───────────────────────────── */
     canvas { touch-action: none; }
+    /* Gerald 18.10.2026 (Tablet): Doppeltipp auf Knöpfe (z. B. ⟲ ⟳ unter der Figur)
+       zoomte die ganze Seite heran – danach kam man nicht mehr heraus. */
+    html, body, button, #appearance-badge, #appearance-badge button { touch-action: manipulation; }
 
     @media (pointer: coarse) {
       .preset-btn {

@@ -273,7 +273,12 @@ export async function bootBoard(): Promise<void> {
     mannequin.pickMannequinBody(e);
   });
 
+  // Tablet (Gerald 18.10.2026): Doppeltippen soll nicht in die Innensicht führen –
+  // dort gibt es keine Esc-Taste. Deshalb merken, womit zuletzt getippt/geklickt wurde.
+  let letzteZeigerArt = 'mouse';
+  renderer.domElement.addEventListener('pointerdown', (e) => { letzteZeigerArt = e.pointerType; }, { capture: true });
   renderer.domElement.addEventListener('dblclick', (e) => {
+    if (letzteZeigerArt !== 'mouse') return;
     // Bedienkonzept 16.10.2026: Doppelklick auf eine freie Figur = verkörpern
     // (Innensicht, Esc führt zurück). Doppelklick auf den Boden tut nichts mehr
     // (legte vorher ungewollt Figuren an).

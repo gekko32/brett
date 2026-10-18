@@ -86,9 +86,19 @@ function beginPinch(deps: TouchDeps): void {
 }
 
 export function _onPointerDown(
-  e: { pointerId: number; clientX: number; clientY: number },
+  e: { pointerId: number; clientX: number; clientY: number; isPrimary?: boolean },
   deps: TouchDeps,
 ): void {
+  // Gerald 18.10.2026: Ging ein „Finger hoch“ verloren (z. B. Tipp auf einen Knopf
+  // über dem Brett), blieb der alte Finger gespeichert und jeder neue Tipp wurde
+  // zum Zwei-Finger-Zoom – unkontrolliertes Heranzoomen. Der erste Finger einer
+  // neuen Berührung (isPrimary) beginnt deshalb immer von vorn.
+  if (e.isPrimary === true && activePointers.size > 0) {
+    if (mode === 'figure') deps.endFigureDrag();
+    for (const id of activePointers.keys()) deps.releasePointer(id);
+    activePointers.clear();
+    mode = null; orbitLast = null; pinchState = null;
+  }
   activePointers.set(e.pointerId, snap(e));
   deps.capturePointer(e.pointerId);
 

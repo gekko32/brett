@@ -199,24 +199,12 @@ async function oeffneFenster(): Promise<void> {
       const w: Window = await dpip.requestWindow({ width: 440, height: Math.min(900, screen.availHeight - 80) });
       pipFenster = w;
       w.document.title = 'Steuerpult';
-      // B16 (Gerald 18.10.2026): Im Bild-im-Bild-Fenster ließ sich der Scrollbalken
-      // des eingebetteten Pults nicht ziehen. Deshalb scrollt das Fenster selbst:
-      // Der Rahmen wächst auf die volle Höhe seines Inhalts, scrollt also nicht.
-      w.document.body.style.cssText = 'margin:0;background:#0e1116;overflow-x:hidden;overflow-y:auto;';
+      // B16 (Gerald 18.10.2026): Im Bild-im-Bild-Fenster lässt sich der Scrollbalken
+      // des Browsers nicht ziehen → das Pult zeichnet einen eigenen (pip=1).
+      w.document.body.style.cssText = 'margin:0;background:#0e1116;overflow:hidden;';
       const f = w.document.createElement('iframe');
-      f.src = url;
-      f.setAttribute('scrolling', 'no');
-      f.style.cssText = 'border:0;width:100%;height:100vh;display:block;';
-      f.addEventListener('load', () => {
-        const d = f.contentDocument;
-        const fw = f.contentWindow as (Window & typeof globalThis) | null;
-        if (!d || !fw) return;
-        d.documentElement.style.overflow = 'hidden';
-        const passe = () => { f.style.height = Math.max(w.innerHeight, d.documentElement.scrollHeight) + 'px'; };
-        new fw.ResizeObserver(passe).observe(d.body);
-        w.addEventListener('resize', passe);
-        passe();
-      });
+      f.src = url + '&pip=1';
+      f.style.cssText = 'border:0;width:100vw;height:100vh;display:block;';
       w.document.body.appendChild(f);
       return;
     } catch { /* z. B. nicht erlaubt → Popup */ }

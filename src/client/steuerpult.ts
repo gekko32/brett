@@ -660,10 +660,65 @@ function anDenRand(): void {
 
 // In der Seitenleiste des Spielfelds (Tablet): kein Herzschlag → keine Präsentationsansicht.
 const eingebettet = new URLSearchParams(location.search).has('eingebettet');
+// Im Bild-im-Bild-Fenster (pip=1) lässt sich der Browser-Scrollbalken nicht ziehen.
+const imBildImBild = new URLSearchParams(location.search).has('pip');
+
+/**
+ * Eigener, breiter Scrollbalken (B16, Gerald 18.10.2026): reagiert wie ein Knopf
+ * auf Maus und Finger. Griff ziehen = scrollen, Klick in die Bahn = seitenweise.
+ */
+function eigenerScrollbalken(): void {
+  const stil = document.createElement('style');
+  stil.textContent = 'html{scrollbar-width:none}html::-webkit-scrollbar{display:none}body{padding-right:18px}';
+  document.head.append(stil);
+  const bahn = document.createElement('div');
+  Object.assign(bahn.style, { position: 'fixed', top: '0', right: '0', bottom: '0', width: '16px', zIndex: '50',
+    background: 'rgba(255,255,255,0.05)', touchAction: 'none' } as CSSStyleDeclaration);
+  const griff = document.createElement('div');
+  Object.assign(griff.style, { position: 'absolute', left: '2px', right: '2px', borderRadius: '6px',
+    background: 'var(--accent)', opacity: '0.75', cursor: 'grab', minHeight: '40px' } as CSSStyleDeclaration);
+  bahn.append(griff);
+  document.body.append(bahn);
+  const el = document.scrollingElement || document.documentElement;
+  const masse = () => {
+    const sicht = window.innerHeight, ganz = el.scrollHeight;
+    const h = Math.max(40, sicht * sicht / Math.max(ganz, 1));
+    return { sicht, ganz, h, weg: Math.max(1, sicht - h), max: Math.max(0, ganz - sicht) };
+  };
+  const zeige = () => {
+    const m = masse();
+    bahn.style.display = m.max > 0 ? '' : 'none';
+    griff.style.height = m.h + 'px';
+    griff.style.top = (m.max ? el.scrollTop / m.max * m.weg : 0) + 'px';
+  };
+  let zug: { y: number; start: number } | null = null;
+  griff.addEventListener('pointerdown', (e) => {
+    zug = { y: e.clientY, start: el.scrollTop };
+    griff.setPointerCapture(e.pointerId); e.preventDefault(); e.stopPropagation();
+  });
+  griff.addEventListener('pointermove', (e) => {
+    if (!zug) return;
+    const m = masse();
+    el.scrollTop = zug.start + (e.clientY - zug.y) * m.max / m.weg;
+  });
+  const los = () => { zug = null; };
+  griff.addEventListener('pointerup', los);
+  griff.addEventListener('pointercancel', los);
+  bahn.addEventListener('pointerdown', (e) => {
+    if (e.target !== bahn) return;
+    const oben = griff.getBoundingClientRect().top;
+    el.scrollTop += (e.clientY < oben ? -1 : 1) * window.innerHeight * 0.85;
+  });
+  window.addEventListener('scroll', zeige, { passive: true });
+  window.addEventListener('resize', zeige);
+  new ResizeObserver(zeige).observe(document.body);
+  zeige();
+}
 
 function start(): void {
   initLang();
   if (eingebettet) document.body.classList.add('eingebettet');
+  if (imBildImBild || eingebettet) eigenerScrollbalken();
   const istPopup = !!window.opener && window.top === window;
   if (istPopup) anDenRand();
   const kopf = document.querySelector('header');
