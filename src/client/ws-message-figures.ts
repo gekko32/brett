@@ -61,6 +61,7 @@ export function handleFigureMessage(msg: ServerMessage, ctx: FigureMsgCtx): void
       if (!fig) break;
       const c = msg.changes || {};
       if (c.preset && PRESETS[c.preset]) {
+        fig.preset = c.preset; // für das Umschalten der Haltung (presets.ts)
         for (const name of mannequin.BONE_NAMES) {
           fig.bone[name].targetRot.x = PRESETS[c.preset][name].x;
           fig.bone[name].targetRot.z = PRESETS[c.preset][name].z;

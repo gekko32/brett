@@ -16,6 +16,7 @@ import {
 } from './person-catalog';
 import type { PultNachricht, KameraAktion } from './steuerpult-sync';
 import { baueNavKugel } from './ui/nav-kugel';
+import { naechsteHaltung } from './presets-logik';
 import { ebeneText, ebeneHinweis, rolleText, ereignisText, artText, bodenText } from './katalog-texte';
 
 type Fig = {
@@ -382,14 +383,25 @@ function figurBlock(): HTMLElement | null {
     knopf('⟲', () => { drehen(id, 45); zeichnen(true); }, 'dreh'), blick, knopf('⟳', () => { drehen(id, -45); zeichnen(true); }, 'dreh'));
 
   const haltung = h('div', { class: 'raster3' }, ...HALTUNGEN.map(([p, k]) =>
-    knopf(t(k), () => { aendern(id, { preset: p }); zeichnen(); }, f.preset === p ? 'aktiv' : '')));
+    knopf(t(k), () => { aendern(id, { preset: naechsteHaltung(f.preset, p) }); zeichnen(); }, f.preset === p ? 'aktiv' : '')));
 
   const farben = h('div', { class: 'farben' }, ...FARBEN.map(c =>
     h('button', { type: 'button', class: 'farbe' + (f.color === c ? ' aktiv' : ''), style: { background: c }, title: c,
       onclick: () => { aendern(id, { color: c }); zeichnen(); } })));
 
-  const groessen = h('div', { class: 'reihe' }, ...([['S', 0.7], ['M', 1.0], ['L', 1.3]] as Array<[string, number]>).map(([lbl, s]) =>
-    knopf(lbl, () => { aendern(id, { scale: s }); zeichnen(); }, Math.abs((f.scale ?? 1) - s) < 0.01 ? 'aktiv' : '')));
+  // Größe: S/M/L als Schnellwahl, dazu stufenloser Regler (Gerald 18.10.2026).
+  const skala = h('input', { type: 'range', min: '0.4', max: '1.8', step: '0.05', value: String(f.scale ?? 1), style: { flex: '1' } }) as HTMLInputElement;
+  const skalaWert = h('span', { class: 'klein', style: { minWidth: '44px', textAlign: 'right' } }, Math.round((f.scale ?? 1) * 100) + ' %');
+  skala.addEventListener('input', () => {
+    const s = parseFloat(skala.value);
+    skalaWert.textContent = Math.round(s * 100) + ' %';
+    aendern(id, { scale: s });
+  });
+  skala.addEventListener('change', () => zeichnen(true));
+  const groessen = h('div', {},
+    h('div', { class: 'reihe' }, ...([['S', 0.7], ['M', 1.0], ['L', 1.3]] as Array<[string, number]>).map(([lbl, s]) =>
+      knopf(lbl, () => { aendern(id, { scale: s }); zeichnen(); }, Math.abs((f.scale ?? 1) - s) < 0.01 ? 'aktiv' : ''))),
+    h('div', { class: 'reihe', style: { alignItems: 'center', flexWrap: 'nowrap', marginTop: '4px' } }, skala, skalaWert));
 
   // Angaben zur Person
   const p: PersonAngaben = f.person || {};

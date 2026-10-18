@@ -20,6 +20,18 @@ import { filterSnapshotFigures, broadcastFigureAware } from './hidden-filter';
 import * as undoStack from './undo-stack';
 import { roomRowExists, getBrandDefaultTemplate } from './db';
 import { resolveBrand } from './auth';
+import { touchSessionActivity } from './sessions';
+
+// B17 (Gerald 18.10.2026): Die Leerlauf-Prüfung (6 h) zählte ab Sitzungsstart,
+// weil touchSessionActivity nie aufgerufen wurde → laufende Räume endeten mitten
+// in der Arbeit (410). Jetzt vermerkt jede Nachricht Aktivität, höchstens 1×/min je Raum.
+const letzteAktivitaet = new Map<string, number>();
+function aktivitaetMerken(room: string): void {
+  const jetzt = Date.now();
+  if ((letzteAktivitaet.get(room) ?? 0) + 60_000 > jetzt) return;
+  letzteAktivitaet.set(room, jetzt);
+  try { touchSessionActivity(room); } catch { /* Raum noch nicht geladen */ }
+}
 
 export function handleDisconnect(ws: any, deps: WsDeps): void {
   const room = deps.leaveRoom(ws);
@@ -205,6 +217,7 @@ export function attachWsServer(wss: WebSocketServer, deps: WsDeps): void {
 
         const room = ws._room;
         if (!room) return;
+        aktivitaetMerken(room);
 
         // Appearance validation for add / update
         if (msg.type === 'add' && (msg.figure ?? msg.fig)?.appearance) {

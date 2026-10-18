@@ -1,6 +1,7 @@
 import { STATE } from './state';
 import { BONE_NAMES } from './mannequin';
 import { sendUpdate } from './ws-client';
+import { naechsteHaltung } from './presets-logik';
 
 export const PRESETS: Record<string, Record<string, { x: number; z: number }>> = {
   stand: {
@@ -21,9 +22,10 @@ export const PRESETS: Record<string, Record<string, { x: number; z: number }>> =
     lKnee:{x: 1.7,z:0}, rKnee:{x: 1.7,z:0},
     lAnkle:{x:0,z:0}, rAnkle:{x:0,z:0},
   },
+  // Liegen: Arme neben dem Körper (Gerald 18.10.2026), nicht über den Kopf gestreckt.
   prone: {
     hips:{x:-1.5,z:0}, head:{x:0.2,z:0},
-    lShoulder:{x:-1.2,z: 0.1}, rShoulder:{x:-1.2,z:-0.1},
+    lShoulder:{x:0,z: 0.08}, rShoulder:{x:0,z:-0.08},
     lElbow:{x:0,z:0}, rElbow:{x:0,z:0},
     lWrist:{x:0,z:0}, rWrist:{x:0,z:0},
     lHip:{x:0,z:0}, rHip:{x:0,z:0},
@@ -72,11 +74,15 @@ export const PRESETS: Record<string, Record<string, { x: number; z: number }>> =
 export function applyPreset(figId: string, presetKey: string): void {
   const fig = STATE.figures.find(f => f.id === figId);
   if (!fig || !PRESETS[presetKey]) return;
-  const p = PRESETS[presetKey];
+  // Erneuter Klick auf die aktive Haltung → zurück zum Stehen (Gerald 18.10.2026).
+  // Stehen selbst lässt sich nicht „auflösen“.
+  const key = naechsteHaltung((fig as any).preset, presetKey);
+  const p = PRESETS[key];
   for (const name of BONE_NAMES) {
     fig.bone[name].targetRot.x = p[name].x;
     fig.bone[name].targetRot.z = p[name].z;
   }
+  (fig as any).preset = key;
+  sendUpdate(fig, { preset: key });
 
-  sendUpdate(fig, { preset: presetKey });
 }

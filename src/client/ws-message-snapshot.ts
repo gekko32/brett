@@ -57,6 +57,7 @@ export function handleSnapshotMessage(msg: SnapshotMessage, ctx: SnapshotCtx): v
     fig.facingY = f.facingY ?? 0;
     fig.root.rotation.y = fig.facingY;
     if (f.preset && PRESETS[f.preset]) {
+      (fig as any).preset = f.preset;
       for (const name of mannequin.BONE_NAMES) {
         fig.bone[name].targetRot.x = PRESETS[f.preset][name].x;
         fig.bone[name].targetRot.z = PRESETS[f.preset][name].z;
