@@ -110,6 +110,49 @@ export function initSteuerpultSync(): void {
 
 let pipFenster: Window | null = null;
 
+/** Tablet oder schmaler Bildschirm: Steuerpult als Seitenleiste statt eigenem Fenster. */
+export function pultAlsLeiste(): boolean {
+  const grob = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+  return grob || window.innerWidth < 1100;
+}
+
+/**
+ * Steuerpult als Seitenleiste im Spielfeld (Gerald 18.10.2026: auf dem Tablet
+ * nicht zwischen Spielfeld und Pult hin- und herschalten müssen). Das Pult läuft
+ * in einem eingebetteten Rahmen (`eingebettet=1`: kein Herzschlag, also keine
+ * Präsentationsansicht). Zweiter Klick schließt die Leiste.
+ */
+export function schalteSeitenleiste(): void {
+  if (!room) return;
+  const alt = document.getElementById('pult-leiste');
+  if (alt) { alt.remove(); window.dispatchEvent(new Event('resize')); return; }
+  const leiste = document.createElement('div');
+  leiste.id = 'pult-leiste';
+  Object.assign(leiste.style, {
+    position: 'fixed', top: '0', right: '0', bottom: '0', width: 'min(420px, 92vw)', zIndex: '400',
+    display: 'flex', flexDirection: 'column', background: 'var(--brett-bg, #0e1116)',
+    borderLeft: '1px solid rgba(231,234,208,0.15)', boxShadow: '-8px 0 24px rgba(0,0,0,0.35)',
+  } as CSSStyleDeclaration);
+  const kopf = document.createElement('div');
+  Object.assign(kopf.style, { display: 'flex', gap: '6px', justifyContent: 'flex-end', padding: '6px' } as CSSStyleDeclaration);
+  const knopf = (text: string, titel: string, aktion: () => void) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = text; b.title = titel;
+    Object.assign(b.style, { minWidth: '44px', minHeight: '40px', fontSize: '16px', cursor: 'pointer' } as CSSStyleDeclaration);
+    b.addEventListener('click', aktion);
+    kopf.append(b);
+  };
+  knopf('↗', 'Als eigenes Fenster', () => { leiste.remove(); window.dispatchEvent(new Event('resize')); void oeffneFenster(); });
+  knopf('✕', 'Schließen', () => { leiste.remove(); window.dispatchEvent(new Event('resize')); });
+  const rahmen = document.createElement('iframe');
+  rahmen.src = `/steuerpult.html?room=${encodeURIComponent(room)}&eingebettet=1`;
+  Object.assign(rahmen.style, { flex: '1', border: '0', width: '100%' } as CSSStyleDeclaration);
+  leiste.append(kopf, rahmen);
+  // Tipps/Klicks in der Leiste nicht ans Brett durchreichen.
+  for (const ev of ['mousedown', 'pointerdown', 'touchstart']) leiste.addEventListener(ev, e => e.stopPropagation());
+  document.body.append(leiste);
+}
+
 /**
  * Steuerpult öffnen. Bevorzugt als „Bild-im-Bild“-Fenster (Document
  * Picture-in-Picture, Chromium/Vivaldi): bleibt immer im Vordergrund, auch
@@ -117,6 +160,12 @@ let pipFenster: Window | null = null;
  * Teilen des Spielfeld-Fensters ist es nicht zu sehen. Sonst normales Popup.
  */
 export async function oeffneSteuerpult(): Promise<void> {
+  if (!room) return;
+  if (pultAlsLeiste()) { schalteSeitenleiste(); return; }
+  await oeffneFenster();
+}
+
+async function oeffneFenster(): Promise<void> {
   if (!room) return;
   const url = `/steuerpult.html?room=${encodeURIComponent(room)}`;
   const dpip = (window as any).documentPictureInPicture;

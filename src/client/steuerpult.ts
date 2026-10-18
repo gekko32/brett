@@ -107,7 +107,7 @@ async function verbinden(): Promise<void> {
   const scheme = location.protocol === 'https:' ? 'wss:' : 'ws:';
   ws = new WebSocket(`${scheme}//${location.host}/sync?room=${encodeURIComponent(room)}`);
   setStatus(t('pult.connecting'));
-  ws.addEventListener('open', () => { senden({ type: 'join', room }); setStatus(t('pult.connected')); });
+  ws.addEventListener('open', () => { senden({ type: 'join', room }); setStatus(t(eingebettet ? 'pult.connectedEmbedded' : 'pult.connected')); });
   ws.addEventListener('close', () => { setStatus(t('pult.disconnected')); setTimeout(verbinden, 2000); });
   ws.addEventListener('message', (e) => { try { empfangen(JSON.parse(e.data)); } catch { /* ignorieren */ } });
 }
@@ -548,8 +548,12 @@ function anDenRand(): void {
   } catch { /* nicht erlaubt (z. B. Tab statt Popup) */ }
 }
 
+// In der Seitenleiste des Spielfelds (Tablet): kein Herzschlag → keine Präsentationsansicht.
+const eingebettet = new URLSearchParams(location.search).has('eingebettet');
+
 function start(): void {
   initLang();
+  if (eingebettet) document.body.classList.add('eingebettet');
   const istPopup = !!window.opener && window.top === window;
   if (istPopup) anDenRand();
   const kopf = document.querySelector('header');
@@ -574,12 +578,15 @@ function start(): void {
       if (e.data.type === 'select' && e.data.von === 'brett') waehlen(e.data.id, false);
       if (e.data.type === 'kamera-stand') holeNavKugel().aktualisiere(e.data);
     };
-    // Herzschlag: Spielfeld zeigt nur das Brett, solange das Pult offen ist.
-    const ping = () => kanal.postMessage({ type: 'ping' } satisfies PultNachricht);
-    ping(); setInterval(ping, 2000);
+    // Herzschlag: Spielfeld zeigt nur das Brett, solange das Pult offen ist
+    // (nicht als Seitenleiste – dann bleibt das Spielfeld bedienbar).
+    if (!eingebettet) {
+      const ping = () => kanal.postMessage({ type: 'ping' } satisfies PultNachricht);
+      ping(); setInterval(ping, 2000);
+    }
     kanal.postMessage({ type: 'beziehungen', sichtbar: beziehungenSichtbar } satisfies PultNachricht);
     if (startHelligkeit !== 1) kanal.postMessage({ type: 'helligkeit', wert: startHelligkeit } satisfies PultNachricht);
-    window.addEventListener('pagehide', () => kanal.postMessage({ type: 'bye' } satisfies PultNachricht));
+    if (!eingebettet) window.addEventListener('pagehide', () => kanal.postMessage({ type: 'bye' } satisfies PultNachricht));
   }
   zeichnen(true);
   verbinden();

@@ -354,6 +354,7 @@ const es: Record<string, string> = {
   'pult.title': 'Panel de control',
   'pult.connecting': 'Conectando …',
   'pult.connected': 'Conectado – la ventana del tablero muestra solo el tablero',
+  'pult.connectedEmbedded': 'Conectado',
   'pult.disconnected': 'Conexión perdida – reintentando …',
   'pult.noRoom': 'No se indicó sala. Ábrelo desde el tablero.',
   'pult.addPerson': 'Añadir persona',

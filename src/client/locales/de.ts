@@ -355,6 +355,7 @@ const de: Record<string, string> = {
   'pult.title': 'Steuerpult',
   'pult.connecting': 'Verbinde …',
   'pult.connected': 'Verbunden – das Spielfeld zeigt nur das Brett',
+  'pult.connectedEmbedded': 'Verbunden',
   'pult.disconnected': 'Verbindung unterbrochen – neuer Versuch …',
   'pult.noRoom': 'Kein Raum angegeben. Bitte über das Brett öffnen.',
   'pult.addPerson': 'Person hinzufügen',

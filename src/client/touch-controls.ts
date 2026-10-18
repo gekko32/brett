@@ -48,16 +48,15 @@ export function initBoardTouchControls(deps: TouchControlsDeps): void {
     return true;
   };
 
+  // Tablet (Gerald 18.10.2026): Finger verhält sich wie die Maus – auswählen,
+  // sperren und sofort ziehen/drehen. Vorher „verkörperte“ ein Tipp auf eine
+  // freie Figur sie nur (figure_possess) und es passierte sichtbar nichts;
+  // Verkörpern bleibt über die Innensicht erreichbar (Bedienkonzept).
   const lockAndSelect = (figId: string): boolean => {
     const fig = STATE.figures.find(f => f.id === figId);
     if (!fig) return false;
-    const isFree = !(fig as any)._serverPossessor && !activeLocks.get(fig.id);
     figPanel.selectFigure(fig.id);
     const ws = getWs();
-    if (isFree) {
-      if (isWsReady() && ws) ws.send(JSON.stringify({ type: 'figure_possess', figureId: fig.id }));
-      return false; // possess only — do not start a drag
-    }
     if (isWsReady() && ws) ws.send(JSON.stringify({ type: 'figure_lock', id: fig.id, color: currentUser.color }));
     return true;
   };

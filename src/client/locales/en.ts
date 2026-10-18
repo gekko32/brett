@@ -354,6 +354,7 @@ const en: Record<string, string> = {
   'pult.title': 'Control panel',
   'pult.connecting': 'Connecting …',
   'pult.connected': 'Connected – the board window shows only the board',
+  'pult.connectedEmbedded': 'Connected',
   'pult.disconnected': 'Connection lost – retrying …',
   'pult.noRoom': 'No room given. Please open from the board.',
   'pult.addPerson': 'Add person',

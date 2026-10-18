@@ -354,6 +354,7 @@ const fr: Record<string, string> = {
   'pult.title': 'Pupitre',
   'pult.connecting': 'Connexion …',
   'pult.connected': 'Connecté – la fenêtre du plateau n’affiche que le plateau',
+  'pult.connectedEmbedded': 'Connecté',
   'pult.disconnected': 'Connexion perdue – nouvelle tentative …',
   'pult.noRoom': 'Aucune salle indiquée. Ouvrir depuis le plateau.',
   'pult.addPerson': 'Ajouter une personne',
