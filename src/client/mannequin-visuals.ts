@@ -18,10 +18,11 @@ export function updatePossessionVisuals(figures: any[], currentUserId: string): 
     const isOthers = possessor && possessor !== currentUserId;
 
     if (!possessor) {
-      // Free figure — dashed brass ring (pulsing)
-      fig.possessionRing.visible = true;
-      fig.possessionRing.material.opacity = 0.3 + Math.sin(now * 0.003) * 0.12;
-      fig.possessionRing.material.color.set(0xc8a96e); // brass
+      // Freie Figur: kein Ring (Gerald 18.10.2026, ruhiges Bild). Der pulsierende
+      // Ring lag bei der klassischen Figur ohnehin unter dem Boden (Bodenhaftung
+      // senkt sie um die Knöchelhöhe ab) und wurde erst beim Mannequin sichtbar.
+      fig.possessionRing.visible = false;
+      void now;
       fig.labelSprite.visible = false;
     } else if (isMine) {
       // Own possession — solid brass ring + label

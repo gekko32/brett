@@ -34,6 +34,8 @@ export interface OptikSettings {
   floor?: string;
   sky?: 'day' | 'dusk' | 'calm';
   lightMood?: 'neutral' | 'warm' | 'cool';
+  /** Figurenart (figur-stil.ts): klassisch | verfeinert | mannequin. */
+  figuren?: string;
 }
 
 export interface LobbySettings {

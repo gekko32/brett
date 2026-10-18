@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { STATE, PLACEMENT_SPEC } from '../state';
 import { sendUpdate } from '../ws-client';
 import { placeholderSvg, type VarGetter } from './skin';
+import { setGesichtNeuAnbringen } from '../figur-stil';
 
 const textureCache = new Map<string, THREE.Texture>();
 
@@ -35,17 +36,20 @@ export function applyFaceToFig(fig: any, faceName: string | null): void {
     const tex = loadTex(`/assets/figure-pack/faces/${faceName}.png`);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = 4;
+    // Mannequin (figur-stil.ts): Kopf ist kleiner/anders geformt → Lage und Größe aus den Messwerten.
+    const groesse = fig._gesicht?.groesse ?? 0.4;
     const decal = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.4, 0.4),
+      new THREE.PlaneGeometry(groesse, groesse),
       new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.3, depthWrite: false }),
     );
     decal.name = 'faceDecal';
     // Vorderseite zeigt nach +Z (Plane-Normale), vorn = +Z
-    decal.position.set(0, 0.0, 0.163);
+    decal.position.set(0, 0.0, fig._gesicht?.z ?? 0.163);
     head?.add(decal);
     if (eyes) eyes.visible = false;
   } else if (eyes) {
-    eyes.visible = true;
+    // Beim Mannequin hat das Modell ein eigenes Gesicht (Nase) – keine Kugelaugen.
+    eyes.visible = !fig._modell && fig._stilSchluessel?.startsWith?.('mannequin') !== true;
   }
 }
 
@@ -73,6 +77,9 @@ export function applyAccessorySlot(fig: any, slot: string, accName: string | nul
   boneGroup.add(mesh);
   fig.appearanceMeshes[slot] = mesh;
 }
+
+// Nach einem Umbau der Figurenart Gesichtsbild neu anbringen.
+setGesichtNeuAnbringen((fig: any) => applyFaceToFig(fig, fig.appearance?.face ?? null));
 
 export function applyAppearanceToFig(fig: any, appearance: any): void {
   if (!appearance) return;

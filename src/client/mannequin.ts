@@ -73,6 +73,7 @@ export function makeBone(parent: THREE.Object3D, length: number, color = 0xb8c0a
   geom.translate(0, -length / 2, 0); // pivot at top
   const mat = new THREE.MeshLambertMaterial({ color });
   const mesh = new THREE.Mesh(geom, mat);
+  mesh.userData.klassisch = true; // Figurenart „klassisch“ (figur-stil.ts)
   g.add(mesh);
   g.userData.length = length;
   parent.add(g);
@@ -116,6 +117,7 @@ export function makeMannequin(id?: string, position = { x: 0, z: 0 }, opts: any 
   );
   torsoMesh.position.y = 0.35; hips.add(torsoMesh);
   torsoMesh.name = 'torso';
+  torsoMesh.userData.klassisch = true;
 
   const head = new THREE.Group(); head.position.y = 0.85; hips.add(head);
   head.name = 'head';
@@ -123,6 +125,7 @@ export function makeMannequin(id?: string, position = { x: 0, z: 0 }, opts: any 
     new THREE.MeshLambertMaterial({ color: skinColor }));
   head.add(headMesh);
   headMesh.name = 'headMesh';
+  headMesh.userData.klassisch = true;
 
   // Stilisiertes Gesicht (Gerald 16.10.2026: muss erkennbar sein, zeigt die
   // Blickrichtung). Vorn = lokal +Z (Haltungen/Kniebeugung und Patricks
@@ -159,6 +162,7 @@ export function makeMannequin(id?: string, position = { x: 0, z: 0 }, opts: any 
     band.position.y = 0.08;
     head.add(band);
     band.name = 'headband';
+    band.userData.klassisch = true;
 
     const belt = new THREE.Mesh(
       new THREE.BoxGeometry(0.42, 0.04, 0.24),
@@ -167,6 +171,7 @@ export function makeMannequin(id?: string, position = { x: 0, z: 0 }, opts: any 
     belt.position.y = -0.44;
     hips.add(belt);
     belt.name = 'belt';
+    belt.userData.klassisch = true;
   }
 
   // Arms

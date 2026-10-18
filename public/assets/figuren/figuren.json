@@ -1,0 +1,171 @@
+{
+  "quelle": "MPFB ",
+  "skelett": "game_engine",
+  "figuren": {
+    "mann": {
+      "datei": "mann.glb",
+      "hoehe": 1.787,
+      "boden": -0.0008,
+      "dreiecke": 6000,
+      "dreieckeVorher": 26756,
+      "knochen": 53,
+      "kopf": {
+        "mitte": [
+          0.0,
+          1.6677,
+          0.06
+        ],
+        "vorn": 0.1714,
+        "hoehe": 0.2369,
+        "breite": 0.1752
+      },
+      "makros": {
+        "gender": 1.0,
+        "age": 0.5,
+        "height": 0.55
+      },
+      "groesseKB": 228
+    },
+    "frau": {
+      "datei": "frau.glb",
+      "hoehe": 1.5618,
+      "boden": -0.0002,
+      "dreiecke": 6000,
+      "dreieckeVorher": 26756,
+      "knochen": 53,
+      "kopf": {
+        "mitte": [
+          0.0005,
+          1.4573,
+          0.0521
+        ],
+        "vorn": 0.1499,
+        "hoehe": 0.2087,
+        "breite": 0.1599
+      },
+      "makros": {
+        "gender": 0.0,
+        "age": 0.5,
+        "height": 0.45
+      },
+      "groesseKB": 228
+    },
+    "neutral": {
+      "datei": "neutral.glb",
+      "hoehe": 1.6593,
+      "boden": -0.0004,
+      "dreiecke": 6000,
+      "dreieckeVorher": 26756,
+      "knochen": 53,
+      "kopf": {
+        "mitte": [
+          -0.0006,
+          1.5487,
+          0.0555
+        ],
+        "vorn": 0.1595,
+        "hoehe": 0.2204,
+        "breite": 0.166
+      },
+      "makros": {
+        "gender": 0.5,
+        "age": 0.5
+      },
+      "groesseKB": 227
+    },
+    "kind": {
+      "datei": "kind.glb",
+      "hoehe": 1.1438,
+      "boden": 0.0,
+      "dreiecke": 6000,
+      "dreieckeVorher": 26756,
+      "knochen": 53,
+      "kopf": {
+        "mitte": [
+          -0.0,
+          1.0528,
+          0.0385
+        ],
+        "vorn": 0.1255,
+        "hoehe": 0.1821,
+        "breite": 0.1443
+      },
+      "makros": {
+        "gender": 0.5,
+        "age": 0.14
+      },
+      "groesseKB": 227
+    },
+    "aelter_mann": {
+      "datei": "aelter_mann.glb",
+      "hoehe": 1.7091,
+      "boden": -0.0008,
+      "dreiecke": 6000,
+      "dreieckeVorher": 26756,
+      "knochen": 53,
+      "kopf": {
+        "mitte": [
+          0.0005,
+          1.5891,
+          0.0531
+        ],
+        "vorn": 0.1612,
+        "hoehe": 0.2384,
+        "breite": 0.167
+      },
+      "makros": {
+        "gender": 1.0,
+        "age": 0.85,
+        "height": 0.5
+      },
+      "groesseKB": 228
+    },
+    "aelter_frau": {
+      "datei": "aelter_frau.glb",
+      "hoehe": 1.5532,
+      "boden": -0.0003,
+      "dreiecke": 6000,
+      "dreieckeVorher": 26756,
+      "knochen": 53,
+      "kopf": {
+        "mitte": [
+          -0.0,
+          1.4462,
+          0.0759
+        ],
+        "vorn": 0.1731,
+        "hoehe": 0.2134,
+        "breite": 0.1574
+      },
+      "makros": {
+        "gender": 0.0,
+        "age": 0.85,
+        "height": 0.45
+      },
+      "groesseKB": 227
+    },
+    "aelter_neutral": {
+      "datei": "aelter_neutral.glb",
+      "hoehe": 1.6441,
+      "boden": -0.0,
+      "dreiecke": 6000,
+      "dreieckeVorher": 26756,
+      "knochen": 53,
+      "kopf": {
+        "mitte": [
+          0.0001,
+          1.5304,
+          0.0646
+        ],
+        "vorn": 0.1676,
+        "hoehe": 0.2273,
+        "breite": 0.1634
+      },
+      "makros": {
+        "gender": 0.5,
+        "age": 0.85
+      },
+      "groesseKB": 228
+    }
+  }
+}

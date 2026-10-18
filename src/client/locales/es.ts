@@ -87,6 +87,10 @@ const es: Record<string, string> = {
   'menu.saveTemplate': 'Guardar como plantilla',
   // Steuerpult: Ansicht + Beziehungen
   'pult.view': 'Vista',
+  'pult.figures': 'Figuras',
+  'figures.klassisch': 'Clásico (bolas y palos)',
+  'figures.verfeinert': 'Refinado (cuerpos más redondos)',
+  'figures.mannequin': 'Maniquí (forma humana)',
   // Spielfeld: bisher fest verdrahtete Texte (Bedienkonzept Schritt 6)
   'fig.btn': '＋ Figura ▾',
   'fig.newTitle': 'NUEVA FIGURA',

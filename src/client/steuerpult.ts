@@ -28,7 +28,7 @@ const room = new URLSearchParams(location.search).get('room') || '';
 const figuren = new Map<string, Fig>();
 let ausgewaehlt: string | null = null;
 let sessionCode: string | null = null;
-let optik: { sky?: string; lightMood?: string; floor?: string } = {};
+let optik: { sky?: string; lightMood?: string; floor?: string; figuren?: string } = {};
 type Linie = { id: string; fromId: string; toId: string; lineType: string; art?: string; label?: string };
 const linien = new Map<string, Linie>();
 let beziehungenSichtbar = (() => { try { return localStorage.getItem('pult_beziehungen') !== 'aus'; } catch { return true; } })();
@@ -291,7 +291,7 @@ function sitzungBlock(): HTMLElement {
 }
 
 function ansichtBlock(): HTMLElement {
-  const optWahl = (werte: Array<[string, string]>, aktuell: string | undefined, key: 'sky' | 'lightMood' | 'floor', direkt = false) => {
+  const optWahl = (werte: Array<[string, string]>, aktuell: string | undefined, key: 'sky' | 'lightMood' | 'floor' | 'figuren', direkt = false) => {
     const s = h('select', {}, ...werte.map(([v, k]) => h('option', { value: v, selected: v === aktuell }, direkt ? k : t(k))));
     // optik_set ersetzt alle Werte → immer Boden, Himmel und Licht zusammen senden.
     s.addEventListener('change', () => { optik = { ...optik, [key]: s.value }; senden({ type: 'admin_set_optik', settings: { ...optik } }); });
@@ -311,6 +311,7 @@ function ansichtBlock(): HTMLElement {
     h('div', { class: 'reihe', style: { marginTop: '4px' } },
       kam('⌂ ' + t('pult.camReset'), t('pult.camReset'), 'zurueck'), kam('⬒ ' + t('pult.camTop'), t('pult.camTop'), 'draufsicht')),
     h('label', { class: 'feld', style: { flexDirection: 'row', alignItems: 'center', gap: '6px' } }, bz, t('pult.showRelations')),
+    h('label', { class: 'feld' }, t('pult.figures'), optWahl([['klassisch', 'figures.klassisch'], ['verfeinert', 'figures.verfeinert'], ['mannequin', 'figures.mannequin']], optik.figuren || 'klassisch', 'figuren')),
     h('label', { class: 'feld' }, t('pult.floor'), optWahl(BOEDEN.map(([k, l]) => [k, bodenText(k, l)] as [string, string]), optik.floor, 'floor', true)),
     h('label', { class: 'feld' }, t('session.sky'), optWahl([['day', 'optik.day'], ['dusk', 'optik.dusk'], ['calm', 'optik.calm']], optik.sky, 'sky')),
     h('label', { class: 'feld' }, t('session.light'), optWahl([['neutral', 'optik.neutral'], ['warm', 'optik.warm'], ['cool', 'optik.cool']], optik.lightMood, 'lightMood')),

@@ -5,6 +5,7 @@
 // Himmel und Licht. Nutzt dieselben Server-Befehle wie die frühere Lobby.
 
 import { t } from '../i18n';
+import { getAktuelleOptik } from './optik';
 import { getLobbyState, sendClient } from '../ws-client';
 
 let panel: HTMLDivElement | null = null;
@@ -117,10 +118,10 @@ async function baue(): Promise<HTMLDivElement> {
   const optik = (getLobbyState().settings as any)?.optik || {};
   p.appendChild(zeile(t('session.sky'), auswahl(
     [['day', t('optik.day')], ['dusk', t('optik.dusk')], ['calm', t('optik.calm')]], optik.sky,
-    v => sendClient({ type: 'admin_set_optik', settings: { sky: v as 'day' | 'dusk' | 'calm' } }))));
+    v => sendClient({ type: 'admin_set_optik', settings: { ...getAktuelleOptik(), sky: v as 'day' | 'dusk' | 'calm' } }))));
   p.appendChild(zeile(t('session.light'), auswahl(
     [['neutral', t('optik.neutral')], ['warm', t('optik.warm')], ['cool', t('optik.cool')]], optik.lightMood,
-    v => sendClient({ type: 'admin_set_optik', settings: { lightMood: v as 'neutral' | 'warm' | 'cool' } }))));
+    v => sendClient({ type: 'admin_set_optik', settings: { ...getAktuelleOptik(), lightMood: v as 'neutral' | 'warm' | 'cool' } }))));
 
   document.body.appendChild(p);
   return p;

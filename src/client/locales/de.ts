@@ -88,6 +88,10 @@ const de: Record<string, string> = {
   'menu.saveTemplate': 'Als Vorlage speichern',
   // Steuerpult: Ansicht + Beziehungen
   'pult.view': 'Ansicht',
+  'pult.figures': 'Figuren',
+  'figures.klassisch': 'Klassisch (Kugeln und Stäbe)',
+  'figures.verfeinert': 'Verfeinert (rundere Körper)',
+  'figures.mannequin': 'Mannequin (menschliche Form)',
   // Spielfeld: bisher fest verdrahtete Texte (Bedienkonzept Schritt 6)
   'fig.btn': '＋ Figur ▾',
   'fig.newTitle': 'NEUE FIGUR',

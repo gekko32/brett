@@ -8,6 +8,12 @@ import * as THREE from 'three';
 import { getScene } from '../state';
 import type { OptikSettings } from '../../types/state';
 import { optikToSceneParams } from './optik-map';
+import { setFigurStil } from '../figur-stil';
+
+// Zuletzt angewandte Optik – wer nur einen Wert ändert, muss die übrigen
+// mitschicken (optik_set ersetzt alle Werte).
+let aktuelleOptik: OptikSettings = {};
+export function getAktuelleOptik(): OptikSettings { return { ...aktuelleOptik }; }
 
 /**
  * Apply the optik to the live scene. Best-effort: if the scene is not yet
@@ -15,6 +21,8 @@ import { optikToSceneParams } from './optik-map';
  * lobby_settings_change + snapshot mount) need no guards.
  */
 export function applyOptikToScene(optik: OptikSettings): void {
+  aktuelleOptik = { ...optik };
+  setFigurStil(optik.figuren);
   let refs;
   try {
     refs = getScene();

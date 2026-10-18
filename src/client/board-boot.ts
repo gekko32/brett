@@ -3,6 +3,7 @@
 // keeping the Hauptmenü Three-free.
 
 import * as THREE from 'three';
+import { tickFigurStil } from './figur-stil';
 import { STATE, ui, getWs, isWsReady, currentUser, activeLocks } from './state';
 import { initScene, leistenHoehe } from './scene';
 import * as mannequin from './mannequin';
@@ -406,6 +407,8 @@ export async function bootBoard(): Promise<void> {
     const dt = Math.min(0.05, (now - lastTickMs) / 1000);
     lastTickMs = now;
     mannequin.tickSpring(dt);
+    // Figurenart abgleichen, Mannequin-Knochen den Gelenken nachführen.
+    tickFigurStil();
     if (!isReplayMode) updateLinePositions();
     mannequin.updatePossessionVisuals(STATE.figures, currentUser.userId);
     // T000471: Moderation visuals (Spotlight/Dim/Freeze)

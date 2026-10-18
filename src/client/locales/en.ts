@@ -87,6 +87,10 @@ const en: Record<string, string> = {
   'menu.saveTemplate': 'Save as template',
   // Steuerpult: Ansicht + Beziehungen
   'pult.view': 'View',
+  'pult.figures': 'Figures',
+  'figures.klassisch': 'Classic (balls and sticks)',
+  'figures.verfeinert': 'Refined (rounder bodies)',
+  'figures.mannequin': 'Mannequin (human shape)',
   // Spielfeld: bisher fest verdrahtete Texte (Bedienkonzept Schritt 6)
   'fig.btn': '＋ Figure ▾',
   'fig.newTitle': 'NEW FIGURE',

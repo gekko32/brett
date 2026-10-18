@@ -87,6 +87,10 @@ const fr: Record<string, string> = {
   'menu.saveTemplate': 'Enregistrer comme modèle',
   // Steuerpult: Ansicht + Beziehungen
   'pult.view': 'Vue',
+  'pult.figures': 'Figures',
+  'figures.klassisch': 'Classique (boules et tiges)',
+  'figures.verfeinert': 'Affiné (corps plus ronds)',
+  'figures.mannequin': 'Mannequin (forme humaine)',
   // Spielfeld: bisher fest verdrahtete Texte (Bedienkonzept Schritt 6)
   'fig.btn': '＋ Figure ▾',
   'fig.newTitle': 'NOUVELLE FIGURE',
