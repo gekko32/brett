@@ -12,7 +12,7 @@ import { PERSONEN_KATALOG, KOERPER_GROESSE, KOERPER_APPEARANCE, BLASS_OPACITY, B
 import {
   type GenoPerson, type GenoLinie, type Geschlecht, STRUKTUR_ARTEN,
   geschlechtVon, positionen, elternGruppen, waereZirkulaer, lebensjahre, ABSTAND_X, ABSTAND_Y,
-  PAAR_ARTEN, linienStil, zickzack, markerVon, KIND_ARTEN, zwillingsPaare, type EigenerMarker,
+  PAAR_ARTEN, linienStil, zickzack, markerVon, KIND_ARTEN, zwillingsPaare, type EigenerMarker, stammbaumLayout,
 } from './genogramm-modell';
 import { EREIGNISSE } from './person-catalog';
 import { ebeneText, rolleText, ereignisText, artText } from './katalog-texte';
@@ -25,6 +25,11 @@ const room = new URLSearchParams(location.search).get('room') || '';
 const figuren = new Map<string, Fig>();
 const linien = new Map<string, GenoLinie>();
 let ausgewaehlt: string | null = null;
+// Mehrfachauswahl (Gerald 18.10.2026): Umschalt/Strg-Klick, Rahmen ziehen oder Knopf „Mehrfach“ (Tablet).
+const mehr = new Set<string>();
+let mehrModus = false;
+// Legende verschiebbar (Lage pro Gerät gemerkt).
+let legendePos = (() => { try { return JSON.parse(localStorage.getItem('geno_legende_pos') || '') as { x: number; y: number }; } catch { return { x: 12, y: 12 }; } })();
 let ws: WebSocket | null = null;
 const kanal = room && typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(`brett-${room}`) : null;
 
@@ -158,6 +163,7 @@ function linieNeu(von: string, zu: string, art: string, label?: string): void {
 
 function waehlen(id: string | null, melden = true): void {
   ausgewaehlt = id;
+  mehr.clear();
   if (melden) kanal?.postMessage({ type: 'select', id, von: 'pult' } satisfies PultNachricht);
   zeichne(); panel();
 }
@@ -173,7 +179,7 @@ function el<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, 
 const R = 25; // halbe Symbolgröße
 
 function symbol(p: Fig, x: number, y: number): SVGGElement {
-  const g = el('g', { 'data-id': p.id, class: 'person' + (p.id === ausgewaehlt ? ' gewaehlt' : '')
+  const g = el('g', { 'data-id': p.id, class: 'person' + (p.id === ausgewaehlt || mehr.has(p.id) ? ' gewaehlt' : '')
     + (p.person?.inAufstellung === false ? ' nicht-aufgestellt' : ''), transform: `translate(${x},${y})`, style: 'cursor:pointer' });
   const fuellung = (p.color || '#b8c0a8') + '55';
   const ges: Geschlecht = geschlechtVon(p);
@@ -366,7 +372,7 @@ function pfeilDefs(): void {
 function zeichneLegende(personen: Fig[], alleLinien: GenoLinie[]): void {
   svg.querySelector('#legende')?.remove();
   if (!legendeAn || !personen.length) return;
-  const g = el('g', { id: 'legende', transform: 'translate(12,12)' });
+  const g = el('g', { id: 'legende', transform: `translate(${legendePos.x},${legendePos.y})`, style: 'cursor:move' });
   const zeilen: Array<(z: SVGGElement) => void> = [];
   const symbolZeile = (form: string) => (z: SVGGElement) => {
     const s = 8;
@@ -497,10 +503,70 @@ const SVG_STIL = '.p-form{stroke:#1f2630;stroke-width:2}.p-name{font:600 13px sa
   + '.nicht-aufgestellt{opacity:.55}.nicht-aufgestellt .p-form{stroke-dasharray:5 4}';
 
 // ── Seitenleiste: ausgewählte Person ─────────────────────────────────────────
+/** Person samt ihren Linien löschen, rückgängig machbar. */
+function loeschenMitVerlauf(id: string): void {
+  const fig = figuren.get(id);
+  if (!fig) return;
+  const kopie = { ...fig };
+  const ihre = [...linien.values()].filter(l => l.fromId === id || l.toId === id).map(l => ({ ...l }));
+  figurDel(id);
+  merke({
+    rueck: () => { figurAdd(kopie); for (const l of ihre) senden(linieMeldung(l.fromId, l.toId, l.art || '', l.label)); },
+    vor: () => figurDel(kopie.id),
+  });
+}
+
+/** Bedienfeld bei Mehrfachauswahl. */
+function panelMehrere(a: HTMLElement): void {
+  const h2 = document.createElement('h2'); h2.textContent = mehr.size + ' ' + t('geno.selectedPersons'); a.append(h2);
+  const namen = document.createElement('div'); namen.className = 'klein';
+  namen.textContent = [...mehr].map(i => figuren.get(i)?.label || '—').join(', ');
+  a.append(namen);
+  const knopf = (text: string, aktion: () => void) => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = text; b.style.margin = '6px 6px 0 0';
+    b.addEventListener('click', aktion); a.append(b); return b;
+  };
+  const aufsBrett = (an: boolean) => gruppiert(() => {
+    for (const i of mehr) { const f = figuren.get(i); if (f) aendern(i, { person: { ...(f.person || {}), inAufstellung: an } }); }
+  });
+  knopf('● ' + t('geno.multiOnBoard'), () => { aufsBrett(true); zeichne(); panel(); });
+  knopf('○ ' + t('geno.multiOffBoard'), () => { aufsBrett(false); zeichne(); panel(); });
+  let bereit = false;
+  const loesch = knopf('🗑 ' + t('geno.multiDelete'), () => {
+    if (!bereit) { bereit = true; loesch.textContent = t('geno.multiDeleteConfirm'); loesch.classList.add('warn'); return; }
+    gruppiert(() => { for (const i of [...mehr]) loeschenMitVerlauf(i); });
+    mehr.clear(); ausgewaehlt = null; zeichne(); panel();
+  });
+  knopf('✕ ' + t('geno.multiClear'), () => { mehr.clear(); zeichne(); panel(); });
+}
+
+/** Stammbaum neu anordnen (zweiter Klick bestätigt, Rückgängig möglich). */
+let anordnenBereit: ReturnType<typeof setTimeout> | null = null;
+function anordnen(): void {
+  const b = document.getElementById('g-anordnen')!;
+  if (!anordnenBereit) {
+    // Beschriftung bleibt gleich (sonst springt der Knopf in der Leiste weg), Rückfrage als Hinweis.
+    b.classList.add('warn'); hinweis(t('geno.arrangeConfirm'));
+    anordnenBereit = setTimeout(() => { anordnenBereit = null; b.classList.remove('warn'); hinweis(null); }, 5000);
+    return;
+  }
+  clearTimeout(anordnenBereit); anordnenBereit = null; b.classList.remove('warn'); hinweis(null);
+  const neu = stammbaumLayout([...figuren.values()], [...linien.values()]);
+  gruppiert(() => {
+    for (const [i, p] of neu) {
+      const f = figuren.get(i);
+      if (f && (f.geno?.x !== p.x || f.geno?.y !== p.y)) aendern(i, { geno: p });
+    }
+  });
+  status(t('geno.arranged'));
+  einpassen();
+}
+
 function panel(): void {
   const a = document.getElementById('g-panel')!;
   if (a.contains(document.activeElement) && ['INPUT', 'SELECT'].includes(document.activeElement!.tagName)) return;
   a.innerHTML = '';
+  if (mehr.size > 1) { panelMehrere(a); return; }
   const f = ausgewaehlt ? figuren.get(ausgewaehlt) : null;
   if (!f) {
     a.append(Object.assign(document.createElement('div'), { className: 'klein', textContent: t('geno.selectHint') }));
@@ -818,16 +884,32 @@ function weltPunkt(e: PointerEvent | WheelEvent): { x: number; y: number } {
   return { x: (e.clientX - r.left - ansicht.x) / ansicht.s, y: (e.clientY - r.top - ansicht.y) / ansicht.s };
 }
 
-let zug: { art: 'person'; id: string; dx: number; dy: number; bewegt: boolean; start: { x: number; y: number } } | { art: 'flaeche'; x: number; y: number; ax: number; ay: number } | null = null;
+let zug: { art: 'person'; id: string; dx: number; dy: number; bewegt: boolean; start: { x: number; y: number };
+    gruppe: Map<string, { x: number; y: number }>; umschalten: boolean }
+  | { art: 'flaeche'; x: number; y: number; ax: number; ay: number }
+  | { art: 'legende'; x: number; y: number; lx: number; ly: number }
+  | { art: 'rahmen'; w0: { x: number; y: number }; w1: { x: number; y: number } } | null = null;
 
 svg.addEventListener('pointerdown', (e) => {
   const g = (e.target as Element).closest('g.person') as SVGGElement | null;
   svg.setPointerCapture(e.pointerId);
+  if ((e.target as Element).closest('#legende')) {
+    zug = { art: 'legende', x: e.clientX, y: e.clientY, lx: legendePos.x, ly: legendePos.y };
+    return;
+  }
   if (g) {
     const id = g.dataset.id!;
-    const p = positionen([...figuren.values()]).get(id)!;
+    const alle = positionen([...figuren.values()]);
+    const p = alle.get(id)!;
     const w = weltPunkt(e);
-    zug = { art: 'person', id, dx: w.x - p.x, dy: w.y - p.y, bewegt: false, start: { ...p } };
+    // Gezogene Person gehört zur Mehrfachauswahl → alle Ausgewählten mitziehen
+    const ids = mehr.size > 1 && mehr.has(id) ? [...mehr] : [id];
+    const gruppe = new Map(ids.map(i => [i, { ...alle.get(i)! }]));
+    zug = { art: 'person', id, dx: w.x - p.x, dy: w.y - p.y, bewegt: false, start: { ...p }, gruppe,
+      umschalten: e.shiftKey || e.ctrlKey || e.metaKey || mehrModus };
+  } else if (e.shiftKey || mehrModus) {
+    const w = weltPunkt(e);
+    zug = { art: 'rahmen', w0: w, w1: w };
   } else {
     zug = { art: 'flaeche', x: e.clientX, y: e.clientY, ax: ansicht.x, ay: ansicht.y };
     svg.classList.add('ziehen');
@@ -835,6 +917,19 @@ svg.addEventListener('pointerdown', (e) => {
 });
 svg.addEventListener('pointermove', (e) => {
   if (!zug) return;
+  if (zug.art === 'legende') {
+    legendePos = { x: zug.lx + (e.clientX - zug.x), y: zug.ly + (e.clientY - zug.y) };
+    svg.querySelector('#legende')?.setAttribute('transform', `translate(${legendePos.x},${legendePos.y})`);
+    return;
+  }
+  if (zug.art === 'rahmen') {
+    zug.w1 = weltPunkt(e);
+    welt.querySelector('#auswahl-rahmen')?.remove();
+    const x = Math.min(zug.w0.x, zug.w1.x), y = Math.min(zug.w0.y, zug.w1.y);
+    welt.append(el('rect', { id: 'auswahl-rahmen', x, y, width: Math.abs(zug.w1.x - zug.w0.x), height: Math.abs(zug.w1.y - zug.w0.y),
+      fill: 'rgba(192,106,26,0.08)', stroke: '#c06a1a', 'stroke-dasharray': '5 4' }));
+    return;
+  }
   if (zug.art === 'flaeche') {
     ansicht.x = zug.ax + (e.clientX - zug.x); ansicht.y = zug.ay + (e.clientY - zug.y);
     welt.setAttribute('transform', `translate(${ansicht.x},${ansicht.y}) scale(${ansicht.s})`);
@@ -847,16 +942,39 @@ svg.addEventListener('pointermove', (e) => {
   const geno = { x: Math.round((w.x - zug.dx) / 10) * 10, y: Math.round((w.y - zug.dy) / 10) * 10 };
   if (!zug.bewegt && f.geno && Math.hypot(geno.x - f.geno.x, geno.y - f.geno.y) < 6) return;
   zug.bewegt = true;
-  figuren.set(zug.id, { ...f, geno });
+  const dx = geno.x - zug.start.x, dy = geno.y - zug.start.y;
+  for (const [i, s] of zug.gruppe) {
+    const fi = figuren.get(i);
+    if (fi) figuren.set(i, { ...fi, geno: { x: s.x + dx, y: s.y + dy } });
+  }
   zeichne();
 });
 svg.addEventListener('pointerup', () => {
   svg.classList.remove('ziehen');
-  if (zug?.art === 'person') {
-    const id = zug.id;
-    if (zug.bewegt) aendern(id, { geno: figuren.get(id)!.geno }, { geno: zug.start });
-    else if (verbinden) verbindenKlick(id);
-    else waehlen(id);
+  if (zug?.art === 'legende') {
+    try { localStorage.setItem('geno_legende_pos', JSON.stringify(legendePos)); } catch { /* egal */ }
+  } else if (zug?.art === 'rahmen') {
+    welt.querySelector('#auswahl-rahmen')?.remove();
+    const x0 = Math.min(zug.w0.x, zug.w1.x), x1 = Math.max(zug.w0.x, zug.w1.x);
+    const y0 = Math.min(zug.w0.y, zug.w1.y), y1 = Math.max(zug.w0.y, zug.w1.y);
+    const drin = [...positionen([...figuren.values()])].filter(([, p]) => p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1).map(([i]) => i);
+    if (drin.length) {
+      ausgewaehlt = drin[0];
+      mehr.clear(); for (const i of drin) mehr.add(i);
+      zeichne(); panel();
+    }
+  } else if (zug?.art === 'person') {
+    const z = zug;
+    if (z.bewegt) {
+      gruppiert(() => { for (const [i, s] of z.gruppe) aendern(i, { geno: figuren.get(i)!.geno }, { geno: s }); });
+    } else if (verbinden) verbindenKlick(z.id);
+    else if (z.umschalten) {
+      // Mehrfachauswahl umschalten (die bisher einzeln gewählte Person mitnehmen)
+      if (ausgewaehlt && !mehr.size) mehr.add(ausgewaehlt);
+      if (mehr.has(z.id)) mehr.delete(z.id); else mehr.add(z.id);
+      ausgewaehlt = mehr.size ? [...mehr][mehr.size - 1] : null;
+      zeichne(); panel();
+    } else waehlen(z.id);
   }
   zug = null;
 });
@@ -915,6 +1033,17 @@ function start(): void {
   document.getElementById('g-person')!.addEventListener('click', katalogZeigen);
   document.getElementById('g-verbinden')!.addEventListener('click', verbindenUmschalten);
   document.getElementById('g-einpassen')!.addEventListener('click', einpassen);
+  document.getElementById('g-anordnen')!.addEventListener('click', anordnen);
+  const mehrKnopf = document.getElementById('g-mehr')!;
+  mehrKnopf.addEventListener('click', () => {
+    mehrModus = !mehrModus;
+    mehrKnopf.classList.toggle('aktiv', mehrModus);
+    hinweis(mehrModus ? t('geno.multiHint') : null);
+    if (!mehrModus && mehr.size) { mehr.clear(); zeichne(); panel(); }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && mehr.size) { mehr.clear(); zeichne(); panel(); }
+  });
   document.getElementById('g-svg')!.addEventListener('click', svgSpeichern);
   document.getElementById('g-png')!.addEventListener('click', pngSpeichern);
   document.getElementById('g-legende')!.addEventListener('click', legendeUmschalten);

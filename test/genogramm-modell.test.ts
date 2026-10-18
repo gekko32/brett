@@ -116,3 +116,41 @@ test('eigene Marker erscheinen mit Kürzel und Farbe', async () => {
   const m = markerVon({ person: { marker: [{ name: 'Insolvenz', kuerzel: 'In', farbe: '#123456' }] } });
   assert.deepEqual(m, [{ ereignis: 'Insolvenz', kuerzel: 'In', farbe: '#123456' }]);
 });
+
+test('stammbaumLayout: Generationen, Partner nebeneinander, Kinder unter den Eltern', async () => {
+  const { stammbaumLayout, ABSTAND_Y, ABSTAND_X } = await import('../src/client/genogramm-modell');
+  const personen = [
+    { id: 'opa', label: 'Großvater', role: 'gv-vater' },
+    { id: 'oma', label: 'Großmutter', role: 'gm-vater' },
+    { id: 'vater', label: 'Vater', role: 'vater' },
+    { id: 'mutter', label: 'Mutter', role: 'mutter' },
+    { id: 'ich', label: 'Ich', role: 'ich', person: { geburtsjahr: 1970 } },
+    { id: 'bruder', label: 'Bruder', role: 'bruder', person: { geburtsjahr: 1972 } },
+    { id: 'partnerin', label: 'Partnerin', role: 'partner' },
+    { id: 'kind', label: 'Kind', role: 'kind' },
+    { id: 'chef', label: 'Chef', role: 'chef' },
+  ] as any[];
+  const linien = [
+    { id: '1', fromId: 'opa', toId: 'oma', art: 'Ehe/Partnerschaft' },
+    { id: '2', fromId: 'opa', toId: 'vater', art: 'Eltern–Kind' },
+    { id: '3', fromId: 'oma', toId: 'vater', art: 'Eltern–Kind' },
+    { id: '4', fromId: 'vater', toId: 'mutter', art: 'Ehe/Partnerschaft' },
+    { id: '5', fromId: 'vater', toId: 'ich', art: 'Eltern–Kind' },
+    { id: '6', fromId: 'mutter', toId: 'ich', art: 'Eltern–Kind' },
+    { id: '7', fromId: 'vater', toId: 'bruder', art: 'Eltern–Kind' },
+    { id: '8', fromId: 'mutter', toId: 'bruder', art: 'Eltern–Kind' },
+    { id: '9', fromId: 'ich', toId: 'partnerin', art: 'Ehe/Partnerschaft' },
+    { id: '10', fromId: 'ich', toId: 'kind', art: 'Eltern–Kind' },
+  ] as any[];
+  const p = stammbaumLayout(personen, linien);
+  const y = (id: string) => p.get(id)!.y / ABSTAND_Y;
+  assert.equal(y('opa'), 0); assert.equal(y('oma'), 0);
+  assert.equal(y('vater'), 1); assert.equal(y('mutter'), 1);
+  assert.equal(y('ich'), 2); assert.equal(y('bruder'), 2); assert.equal(y('partnerin'), 2);
+  assert.equal(y('kind'), 3);
+  assert.ok(y('chef') > 3, 'Kollegen ohne Stammbaum-Linie stehen darunter');
+  assert.ok(p.get('ich')!.x < p.get('bruder')!.x, 'älteres Geschwister links');
+  assert.equal(Math.abs(p.get('partnerin')!.x - p.get('ich')!.x), ABSTAND_X, 'Partnerin direkt daneben');
+  const plaetze = [...p.values()].map(v => v.x + ',' + v.y);
+  assert.equal(new Set(plaetze).size, plaetze.length, 'keine zwei Personen auf demselben Platz');
+});

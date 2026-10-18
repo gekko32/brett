@@ -242,3 +242,127 @@ export function lebensjahre(p: GenoPerson): string {
   if (t) return `†${t}`;
   return '';
 }
+
+/**
+ * Stammbaum automatisch anordnen (Gerald 18.10.2026, Knopf „Anordnen“).
+ * Überschreibt ALLE Positionen – der Aufrufer fragt vorher nach und macht es
+ * rückgängig-fähig.
+ *
+ * 1. Generation aus der Struktur: Kind eine Reihe unter seinen Eltern, Partner
+ *    in derselben Reihe (Start: generationVon aus Rolle/Name).
+ * 2. Oben beginnend: Paare nebeneinander, Geschwister unter ihren Eltern (nach
+ *    Geburtsjahr), eingeheiratete Partner direkt neben ihrem Partner.
+ * 3. Eltern über die Mitte ihrer Kinder rücken (nur nach rechts, nichts überlappt).
+ * 4. Personen ohne jede Stammbaum-Linie (z. B. Kollegen) in eine eigene Reihe darunter.
+ */
+export function stammbaumLayout(personen: GenoPerson[], linien: GenoLinie[]): Map<string, { x: number; y: number }> {
+  const ids = new Set(personen.map(p => p.id));
+  const kindLinien = linien.filter(l => KIND_ARTEN.includes(l.art || '') && ids.has(l.fromId) && ids.has(l.toId));
+  const paarLinien = linien.filter(l => PAAR_ARTEN.includes(l.art || '') && ids.has(l.fromId) && ids.has(l.toId));
+  const verbunden = new Set<string>();
+  for (const l of [...kindLinien, ...paarLinien]) { verbunden.add(l.fromId); verbunden.add(l.toId); }
+  const nachId = new Map(personen.map(p => [p.id, p]));
+  const geburt = (id: string) => nachId.get(id)?.person?.geburtsjahr ?? 9999;
+  const elternSchluessel = (id: string) => [...(elternVon.get(id) ?? [])].sort().join('+');
+
+  // 1. Generationen
+  const gen = new Map<string, number>();
+  for (const p of personen) gen.set(p.id, generationVon(p.role, p.label));
+  for (let runde = 0; runde < 30; runde++) {
+    let geaendert = false;
+    for (const l of kindLinien) {
+      const soll = gen.get(l.fromId)! + 1;
+      if (gen.get(l.toId)! < soll || (runde < 15 && gen.get(l.toId)! !== soll)) { gen.set(l.toId, soll); geaendert = true; }
+    }
+    for (const l of paarLinien) {
+      const m = Math.max(gen.get(l.fromId)!, gen.get(l.toId)!);
+      if (gen.get(l.fromId) !== m || gen.get(l.toId) !== m) { gen.set(l.fromId, m); gen.set(l.toId, m); geaendert = true; }
+    }
+    if (!geaendert) break;
+  }
+  const familie = personen.filter(p => verbunden.has(p.id));
+  const minGen = familie.length ? Math.min(...familie.map(p => gen.get(p.id)!)) : 0;
+
+  const partnerVon = new Map<string, string[]>();
+  for (const l of paarLinien) {
+    partnerVon.set(l.fromId, [...(partnerVon.get(l.fromId) ?? []), l.toId]);
+    partnerVon.set(l.toId, [...(partnerVon.get(l.toId) ?? []), l.fromId]);
+  }
+  const elternVon = new Map<string, string[]>();
+  for (const l of kindLinien) elternVon.set(l.toId, [...(elternVon.get(l.toId) ?? []), l.fromId]);
+
+  const pos = new Map<string, { x: number; y: number }>();
+  const reihen = new Map<number, string[]>();
+  const generationen = [...new Set(familie.map(p => gen.get(p.id)!))].sort((a, b) => a - b);
+
+  // 2. Reihen von oben nach unten aufbauen
+  for (const g of generationen) {
+    const inReihe = familie.filter(p => gen.get(p.id) === g).map(p => p.id);
+    const reihe: string[] = [];
+    const platziert = new Set<string>();
+    const setze = (id: string) => {
+      if (platziert.has(id)) return;
+      reihe.push(id); platziert.add(id);
+      for (const pa of (partnerVon.get(id) ?? []).filter(x => gen.get(x) === g)) if (!platziert.has(pa)) { reihe.push(pa); platziert.add(pa); }
+    };
+    // Geschwistergruppen nach x-Mitte ihrer Eltern (aus der Reihe darüber)
+    const gruppen = new Map<string, string[]>();
+    for (const id of inReihe.filter(i => (elternVon.get(i) ?? []).some(e => pos.has(e)))) {
+      const key = elternSchluessel(id);
+      gruppen.set(key, [...(gruppen.get(key) ?? []), id]);
+    }
+    const mitte = (key: string) => {
+      const xs = key.split('+').map(e => pos.get(e)?.x).filter((x): x is number => x !== undefined);
+      return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0;
+    };
+    for (const key of [...gruppen.keys()].sort((a, b) => mitte(a) - mitte(b))) {
+      for (const id of gruppen.get(key)!.sort((a, b) => geburt(a) - geburt(b))) setze(id);
+    }
+    for (const id of [...inReihe].sort((a, b) => geburt(a) - geburt(b))) setze(id);
+    reihen.set(g, reihe);
+
+    // x-Werte: erste Person einer Geschwistergruppe möglichst so, dass die Gruppe
+    // unter der Elternmitte steht – nie links von der vorigen Person.
+    let naechstesX = 0;
+    const gesehen = new Set<string>();
+    for (const id of reihe) {
+      let wunsch = naechstesX;
+      const key = elternSchluessel(id);
+      const eltern = (elternVon.get(id) ?? []).filter(e => pos.has(e));
+      if (eltern.length && !gesehen.has(key)) {
+        gesehen.add(key);
+        const geschwister = reihe.filter(x => elternSchluessel(x) === key);
+        let breite = 0;
+        for (const s of geschwister) breite += 1 + (partnerVon.get(s) ?? []).filter(x => gen.get(x) === g).length;
+        const em = mitte(key);
+        wunsch = Math.max(naechstesX, em - ((breite - 1) * ABSTAND_X) / 2);
+      }
+      pos.set(id, { x: wunsch, y: (g - minGen) * ABSTAND_Y });
+      naechstesX = wunsch + ABSTAND_X;
+    }
+  }
+
+  // 3. Eltern über ihre Kinder rücken (von unten nach oben, nur nach rechts)
+  for (const g of [...generationen].reverse()) {
+    const reihe = reihen.get(g)!;
+    for (let i = 0; i < reihe.length; i++) {
+      const id = reihe[i];
+      const pa = (partnerVon.get(id) ?? []).find(x => reihe[i + 1] === x);
+      const kinder = kindLinien.filter(l => l.fromId === id || (pa && l.fromId === pa)).map(l => l.toId).filter(k => pos.has(k));
+      if (!kinder.length) continue;
+      const km = [...new Set(kinder)].reduce((a, k) => a + pos.get(k)!.x, 0) / new Set(kinder).size;
+      const verschiebung = km - (pa ? ABSTAND_X / 2 : 0) - pos.get(id)!.x;
+      if (verschiebung > 0) for (let j = i; j < reihe.length; j++) pos.get(reihe[j])!.x += verschiebung;
+      if (pa) i++;
+    }
+  }
+
+  // 4. Ohne Stammbaum-Bezug: eigene Reihe darunter
+  const ohne = personen.filter(p => !verbunden.has(p.id))
+    .sort((a, b) => generationVon(a.role, a.label) - generationVon(b.role, b.label) || geburt(a.id) - geburt(b.id));
+  const untersteReihe = generationen.length ? generationen[generationen.length - 1] - minGen + 1.5 : 0;
+  ohne.forEach((p, i) => pos.set(p.id, { x: i * ABSTAND_X, y: untersteReihe * ABSTAND_Y }));
+
+  for (const v of pos.values()) { v.x = Math.round(v.x / 10) * 10; v.y = Math.round(v.y / 10) * 10; }
+  return pos;
+}
