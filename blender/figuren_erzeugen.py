@@ -36,6 +36,13 @@ LocationService = importlib.import_module(mpfb.__name__ + ".services.locationser
 ZIEL_DREIECKE = 6000
 ZIEL_DREIECKE_KLEIDUNG = 2500
 
+# Frisuren (Gerald 18.10.2026: Haare am Mannequin statt flacher Bilder), MakeHuman-
+# Systemassets, CC0. Je Körper angepasst und einzeln exportiert; das Brett lädt nur,
+# was eine Figur trägt. Gefärbt wird schlicht – aus der Textur bleibt nur die Form
+# der Strähnen (Alpha) als kleines Graubild haare/<name>.png.
+HAARE = ["short02", "long01", "ponytail01", "braid01", "afro01"]
+HAAR_TEXTUR_PX = 512
+
 # Schlichte Kleidung (Gerald 18.10.2026) aus den MakeHuman-Systemassets (CC0,
 # makehuman_system_assets_cc0.zip, in MPFB eingespielt). Stoffbilder werden nicht
 # übernommen: Kleidung bekommt im Brett die Ebenenfarbe, Kopf/Hände einen Hautton.
@@ -180,6 +187,18 @@ def erzeugen(name, werte, ordner):
             continue
         obj = HumanService.add_mhclo_asset(pfad, koerper, asset_type="Clothes", subdiv_levels=0)
         kleidung.append((stueck, obj))
+    haare = []
+    for haar in HAARE:
+        pfad = os.path.join(LocationService.get_user_data("hair"), haar, haar + ".mhclo")
+        if not os.path.isfile(pfad):
+            print(f"[figuren] Frisur fehlt: {pfad}", flush=True)
+            continue
+        obj = HumanService.add_mhclo_asset(pfad, koerper, asset_type="Hair", subdiv_levels=0)
+        haare.append((haar, obj))
+        # Kopfhaut nicht wegschneiden: ohne Frisur soll der Kopf geschlossen bleiben.
+        for m in list(koerper.modifiers):
+            if m.type == "MASK" and haar in m.name:
+                koerper.modifiers.remove(m)
 
     # Körperform fest einrechnen (Formschlüssel), Hilfsgeometrie entfernen, vereinfachen
     aktiv(koerper)
@@ -230,14 +249,62 @@ def erzeugen(name, werte, ordner):
         export_yup=True,
     )
     info["groesseKB"] = round(os.path.getsize(pfad) / 1024)
+
+    info["haare"] = {}
+    for haar, obj in haare:
+        if obj is None:
+            continue
+        for m in list(obj.modifiers):
+            if m.type != "ARMATURE":
+                obj.modifiers.remove(m)
+        obj.name = "Haar_" + haar
+        neutrales_material(obj, "Haar")
+        bpy.ops.object.select_all(action="DESELECT")
+        obj.select_set(True)
+        skelett.select_set(True)
+        bpy.context.view_layer.objects.active = skelett
+        hpfad = os.path.join(ordner, f"{name}__haar_{haar}.glb")
+        bpy.ops.export_scene.gltf(filepath=hpfad, export_format="GLB", use_selection=True, export_apply=True,
+                                  export_animations=False, export_morph=False, export_skins=True, export_yup=True)
+        info["haare"][haar] = {"datei": os.path.basename(hpfad), "dreiecke": dreiecke(obj),
+                               "groesseKB": round(os.path.getsize(hpfad) / 1024)}
     return info
+
+
+def haar_texturen(ordner):
+    """Strähnen-Form (Alpha) jeder Frisur als kleines Graubild ablegen."""
+    import numpy as np
+    ziel = os.path.join(ordner, "haare")
+    os.makedirs(ziel, exist_ok=True)
+    for haar in HAARE:
+        quelle_ordner = os.path.join(LocationService.get_user_data("hair"), haar)
+        pngs = [f for f in os.listdir(quelle_ordner) if f.lower().endswith(".png")] if os.path.isdir(quelle_ordner) else []
+        if not pngs:
+            continue
+        bild = bpy.data.images.load(os.path.join(quelle_ordner, pngs[0]))
+        w, h = bild.size
+        px = np.empty(w * h * 4, dtype=np.float32)
+        bild.pixels.foreach_get(px)
+        alpha = px[3::4]
+        grau = np.empty_like(px)
+        grau[0::4] = alpha; grau[1::4] = alpha; grau[2::4] = alpha; grau[3::4] = 1.0
+        neu = bpy.data.images.new("haar_" + haar, w, h, alpha=False)
+        neu.pixels.foreach_set(grau)
+        neu.scale(HAAR_TEXTUR_PX, HAAR_TEXTUR_PX)
+        neu.filepath_raw = os.path.join(ziel, haar + ".png")
+        neu.file_format = "PNG"
+        neu.save()
+        bpy.data.images.remove(bild)
+        bpy.data.images.remove(neu)
 
 
 def main():
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     ordner = os.path.abspath(args[0] if args else os.path.join(os.path.dirname(__file__), "..", "public", "assets", "figuren"))
     os.makedirs(ordner, exist_ok=True)
-    ergebnis = {"quelle": "MPFB " + str(getattr(mpfb, "bl_info", {}).get("version", "")), "skelett": "game_engine", "figuren": {}}
+    ergebnis = {"quelle": "MPFB " + str(getattr(mpfb, "bl_info", {}).get("version", "")), "skelett": "game_engine",
+                "haare": HAARE, "figuren": {}}
+    haar_texturen(ordner)
     for name, werte in VARIANTEN.items():
         print(f"[figuren] erzeuge {name} …", flush=True)
         ergebnis["figuren"][name] = erzeugen(name, werte, ordner)

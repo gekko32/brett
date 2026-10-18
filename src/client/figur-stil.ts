@@ -50,8 +50,18 @@ export function varianteFuer(fig: any): string {
   return alt ? 'aelter_' + s : s;
 }
 
+// Haare/Brille in 3D (Gerald 18.10.2026): Zubehör-Auswahl → Frisur des Mannequins.
+export const HAAR_ZU: Record<string, string> = {
+  'hair-short': 'short02', 'hair-long': 'long01', 'hair-bun': 'ponytail01', 'hair-braid': 'braid01', 'hair-curls': 'afro01',
+};
+const kopfZubehoer = (fig: any): string | null => fig.appearance?.accessories?.head ?? null;
+
 function wunschSchluessel(fig: any): string {
-  return stil === 'mannequin' ? 'mannequin:' + varianteFuer(fig) : stil;
+  const kopf = kopfZubehoer(fig);
+  const brille = kopf === 'spectacles' ? ':brille' : '';
+  if (stil === 'mannequin') return 'mannequin:' + varianteFuer(fig) + ':' + (HAAR_ZU[kopf ?? ''] ?? '') + brille;
+  if (stil === 'verfeinert') return 'verfeinert' + brille;
+  return stil;
 }
 
 // ── Gemeinsame Helfer ───────────────────────────────────────────────────────
@@ -132,7 +142,8 @@ function verfeinertBauen(fig: any): void {
 // ── Stufe b: Mannequin aus GLB ──────────────────────────────────────────────
 const ZIEL_HOEHE = 2.0; // wie die klassische Figur (Fuß bis Scheitel)
 const HAUTTON = '#d9cbbb'; // neutral, kein bestimmter Hauttyp
-type FigurInfo = { datei: string; hoehe: number; boden?: number; groesseKB?: number; dreieckeGesamt?: number; kopf?: { mitte: number[]; vorn: number; breite: number } };
+type FigurInfo = { datei: string; hoehe: number; boden?: number; groesseKB?: number; dreieckeGesamt?: number;
+  haare?: Record<string, { datei: string; groesseKB?: number }>; kopf?: { mitte: number[]; vorn: number; breite: number; hoehe?: number } };
 let infoPromise: Promise<Record<string, FigurInfo>> | null = null;
 const modellCache = new Map<string, Promise<any>>();
 
@@ -144,13 +155,44 @@ function infos(): Promise<Record<string, FigurInfo>> {
   return infoPromise;
 }
 function modell(name: string, info: FigurInfo): Promise<any> {
-  if (!modellCache.has(name)) {
-    // Versionskennung aus den Messwerten: ändert sich, wenn die Figur neu erzeugt wurde.
-    const v = (info.groesseKB ?? 0) + '-' + (info.dreieckeGesamt ?? 0);
-    modellCache.set(name, import('three/examples/jsm/loaders/GLTFLoader.js').then(({ GLTFLoader }) =>
-      new GLTFLoader().loadAsync('/assets/figuren/' + name + '.glb?v=' + v)));
+  // Versionskennung aus den Messwerten: ändert sich, wenn die Figur neu erzeugt wurde.
+  return glbLaden(name + '.glb', (info.groesseKB ?? 0) + '-' + (info.dreieckeGesamt ?? 0));
+}
+function glbLaden(datei: string, v: string | number): Promise<any> {
+  if (!modellCache.has(datei)) {
+    modellCache.set(datei, import('three/examples/jsm/loaders/GLTFLoader.js').then(({ GLTFLoader }) =>
+      new GLTFLoader().loadAsync('/assets/figuren/' + datei + '?v=' + v)));
   }
-  return modellCache.get(name)!;
+  return modellCache.get(datei)!;
+}
+const haarTexturen = new Map<string, THREE.Texture>();
+function haarTextur(haar: string): THREE.Texture {
+  if (!haarTexturen.has(haar)) haarTexturen.set(haar, new THREE.TextureLoader().load('/assets/figuren/haare/' + haar + '.png'));
+  return haarTexturen.get(haar)!;
+}
+
+/** 3D-Brille vor den Augen (statt des flachen Bildes). breite = Kopfbreite. */
+function brilleBauen(kopf: THREE.Object3D, vornZ: number, breite: number, augenY: number): void {
+  const g = new THREE.Group();
+  g.userData.stilTeil = true;
+  const mat = new THREE.MeshStandardMaterial({ color: '#2b2b2b', roughness: 0.4, metalness: 0.3 });
+  const r = breite * 0.15, dicke = breite * 0.016, abstand = breite * 0.2;
+  for (const s of [-1, 1]) {
+    const glas = new THREE.Mesh(new THREE.TorusGeometry(r, dicke, 6, 24), mat);
+    glas.position.set(s * abstand, augenY, vornZ);
+    glas.userData.festeFarbe = true;
+    g.add(glas);
+    const buegel = new THREE.Mesh(new THREE.BoxGeometry(dicke * 1.4, dicke * 1.4, breite * 0.55), mat);
+    buegel.position.set(s * (abstand + r), augenY, vornZ - breite * 0.27);
+    buegel.userData.festeFarbe = true;
+    g.add(buegel);
+  }
+  const steg = new THREE.Mesh(new THREE.CylinderGeometry(dicke, dicke, abstand * 2 - r * 2, 6), mat);
+  steg.rotation.z = Math.PI / 2;
+  steg.position.set(0, augenY + r * 0.25, vornZ);
+  steg.userData.festeFarbe = true;
+  g.add(steg);
+  kopf.add(g);
 }
 
 // Unsere Gelenke → Knochen des MPFB-Skeletts „game_engine“ (Eltern zuerst).
@@ -168,7 +210,7 @@ const ELTERN: Record<string, string | null> = {
   lKnee: 'lHip', rKnee: 'rHip', lAnkle: 'lKnee', rAnkle: 'rKnee',
 };
 
-async function mannequinBauen(fig: any, variante: string, schluessel: string): Promise<void> {
+async function mannequinBauen(fig: any, variante: string, schluessel: string, haar = '', brille = false): Promise<void> {
   const alle = await infos();
   const info = alle[variante];
   // Unbekannter Körper → Fehler → ersatzweise „verfeinert“ (siehe anwenden), nie unsichtbar.
@@ -250,6 +292,40 @@ async function mannequinBauen(fig: any, variante: string, schluessel: string): P
   if (info.kopf) {
     fig._gesicht = { z: (info.kopf.vorn - info.kopf.mitte[2]) * k + 0.004, groesse: info.kopf.breite * k * 0.95 };
   }
+
+  // Frisur: eigenes Modell mit demselben Skelett, folgt den Gelenken wie der Körper.
+  const haarInfo = haar ? info.haare?.[haar] : undefined;
+  if (haarInfo) {
+    try {
+      const hg = await glbLaden(haarInfo.datei, haarInfo.groesseKB ?? 0);
+      if (fig._stilSchluessel === schluessel && fig._modell) {
+        const hs = clone(hg.scene);
+        huelle.add(hs);
+        fig.root.updateMatrixWorld(true);
+        const alt = /^(aelter|hochbetagt)/.test(variante);
+        hs.traverse((o: any) => {
+          if (!o.isMesh) return;
+          o.userData.geteilteGeometrie = true;
+          o.userData.festeFarbe = true;
+          o.material = new THREE.MeshStandardMaterial({ color: alt ? '#a3a3a3' : '#3a2b22', roughness: 0.9, metalness: 0,
+            alphaMap: haarTextur(haar), alphaTest: 0.45, side: THREE.DoubleSide });
+          o.frustumCulled = false;
+          o.raycast = () => { /* nicht anklickbar */ };
+        });
+        for (const [gelenk, name] of ZUORDNUNG) {
+          const kn = hs.getObjectByName(name);
+          if (!kn) continue;
+          const versatz = (korrektur[gelenk]?.clone() ?? new THREE.Quaternion())
+            .multiply(rootQInv.clone().multiply(kn.getWorldQuaternion(new THREE.Quaternion())));
+          paare.push({ g: fig.bones[gelenk] as THREE.Object3D, b: kn, versatz });
+        }
+      }
+    } catch (err) { console.warn('[brett] Frisur konnte nicht geladen werden', haar, err); }
+  }
+  // Brille vor dem Gesicht (Kopfgruppe = Kopfmitte)
+  if (brille && fig._gesicht && info.kopf) {
+    brilleBauen(fig.bones.head, fig._gesicht.z + 0.01, info.kopf.breite * k, info.kopf.hoehe ? info.kopf.hoehe * k * 0.08 : 0.02);
+  }
   nachUmbau(fig);
   posenAbgleichen(fig);
 }
@@ -276,14 +352,16 @@ function anwenden(fig: any, schluessel: string): void {
   if (schluessel === 'klassisch') {
     klassischeTeile(fig, true);
     nachUmbau(fig);
-  } else if (schluessel === 'verfeinert') {
+  } else if (schluessel.startsWith('verfeinert')) {
     klassischeTeile(fig, false);
     verfeinertBauen(fig);
+    if (schluessel.endsWith(':brille')) brilleBauen(fig.bones.head, 0.165, 0.3, 0.035);
     nachUmbau(fig);
   } else {
     klassischeTeile(fig, false);
     nachUmbau(fig);
-    mannequinBauen(fig, schluessel.split(':')[1], schluessel).catch((e) => {
+    const [, variante, haar] = schluessel.split(':');
+    mannequinBauen(fig, variante, schluessel, haar || '', schluessel.endsWith(':brille')).catch((e) => {
       console.warn('[brett] Mannequin konnte nicht geladen werden, nutze verfeinert', e);
       if (fig._stilSchluessel === schluessel) { teileEntfernen(fig); positionenZurueck(fig); verfeinertBauen(fig); nachUmbau(fig); }
     });

@@ -1,6 +1,13 @@
 {
   "quelle": "MPFB ",
   "skelett": "game_engine",
+  "haare": [
+    "short02",
+    "long01",
+    "ponytail01",
+    "braid01",
+    "afro01"
+  ],
   "figuren": {
     "mann": {
       "datei": "mann.glb",
@@ -29,7 +36,34 @@
         "age": 0.5,
         "height": 0.55
       },
-      "groesseKB": 406
+      "groesseKB": 406,
+      "haare": {
+        "short02": {
+          "datei": "mann__haar_short02.glb",
+          "dreiecke": 3344,
+          "groesseKB": 128
+        },
+        "long01": {
+          "datei": "mann__haar_long01.glb",
+          "dreiecke": 4108,
+          "groesseKB": 210
+        },
+        "ponytail01": {
+          "datei": "mann__haar_ponytail01.glb",
+          "dreiecke": 5352,
+          "groesseKB": 247
+        },
+        "braid01": {
+          "datei": "mann__haar_braid01.glb",
+          "dreiecke": 5518,
+          "groesseKB": 287
+        },
+        "afro01": {
+          "datei": "mann__haar_afro01.glb",
+          "dreiecke": 2192,
+          "groesseKB": 142
+        }
+      }
     },
     "frau": {
       "datei": "frau.glb",
@@ -58,7 +92,34 @@
         "age": 0.5,
         "height": 0.45
       },
-      "groesseKB": 403
+      "groesseKB": 403,
+      "haare": {
+        "short02": {
+          "datei": "frau__haar_short02.glb",
+          "dreiecke": 3344,
+          "groesseKB": 128
+        },
+        "long01": {
+          "datei": "frau__haar_long01.glb",
+          "dreiecke": 4108,
+          "groesseKB": 210
+        },
+        "ponytail01": {
+          "datei": "frau__haar_ponytail01.glb",
+          "dreiecke": 5352,
+          "groesseKB": 247
+        },
+        "braid01": {
+          "datei": "frau__haar_braid01.glb",
+          "dreiecke": 5518,
+          "groesseKB": 287
+        },
+        "afro01": {
+          "datei": "frau__haar_afro01.glb",
+          "dreiecke": 2192,
+          "groesseKB": 142
+        }
+      }
     },
     "neutral": {
       "datei": "neutral.glb",
@@ -86,7 +147,34 @@
         "gender": 0.5,
         "age": 0.5
       },
-      "groesseKB": 405
+      "groesseKB": 405,
+      "haare": {
+        "short02": {
+          "datei": "neutral__haar_short02.glb",
+          "dreiecke": 3344,
+          "groesseKB": 128
+        },
+        "long01": {
+          "datei": "neutral__haar_long01.glb",
+          "dreiecke": 4108,
+          "groesseKB": 209
+        },
+        "ponytail01": {
+          "datei": "neutral__haar_ponytail01.glb",
+          "dreiecke": 5352,
+          "groesseKB": 246
+        },
+        "braid01": {
+          "datei": "neutral__haar_braid01.glb",
+          "dreiecke": 5518,
+          "groesseKB": 286
+        },
+        "afro01": {
+          "datei": "neutral__haar_afro01.glb",
+          "dreiecke": 2192,
+          "groesseKB": 141
+        }
+      }
     },
     "kind": {
       "datei": "kind.glb",
@@ -114,7 +202,34 @@
         "gender": 0.5,
         "age": 0.14
       },
-      "groesseKB": 406
+      "groesseKB": 406,
+      "haare": {
+        "short02": {
+          "datei": "kind__haar_short02.glb",
+          "dreiecke": 3344,
+          "groesseKB": 128
+        },
+        "long01": {
+          "datei": "kind__haar_long01.glb",
+          "dreiecke": 4108,
+          "groesseKB": 209
+        },
+        "ponytail01": {
+          "datei": "kind__haar_ponytail01.glb",
+          "dreiecke": 5352,
+          "groesseKB": 247
+        },
+        "braid01": {
+          "datei": "kind__haar_braid01.glb",
+          "dreiecke": 5518,
+          "groesseKB": 286
+        },
+        "afro01": {
+          "datei": "kind__haar_afro01.glb",
+          "dreiecke": 2192,
+          "groesseKB": 141
+        }
+      }
     },
     "aelter_mann": {
       "datei": "aelter_mann.glb",
@@ -143,7 +258,34 @@
         "age": 0.85,
         "height": 0.5
       },
-      "groesseKB": 406
+      "groesseKB": 406,
+      "haare": {
+        "short02": {
+          "datei": "aelter_mann__haar_short02.glb",
+          "dreiecke": 3344,
+          "groesseKB": 128
+        },
+        "long01": {
+          "datei": "aelter_mann__haar_long01.glb",
+          "dreiecke": 4108,
+          "groesseKB": 210
+        },
+        "ponytail01": {
+          "datei": "aelter_mann__haar_ponytail01.glb",
+          "dreiecke": 5352,
+          "groesseKB": 247
+        },
+        "braid01": {
+          "datei": "aelter_mann__haar_braid01.glb",
+          "dreiecke": 5518,
+          "groesseKB": 287
+        },
+        "afro01": {
+          "datei": "aelter_mann__haar_afro01.glb",
+          "dreiecke": 2192,
+          "groesseKB": 142
+        }
+      }
     },
     "aelter_frau": {
       "datei": "aelter_frau.glb",
@@ -172,7 +314,34 @@
         "age": 0.85,
         "height": 0.45
       },
-      "groesseKB": 409
+      "groesseKB": 409,
+      "haare": {
+        "short02": {
+          "datei": "aelter_frau__haar_short02.glb",
+          "dreiecke": 3344,
+          "groesseKB": 128
+        },
+        "long01": {
+          "datei": "aelter_frau__haar_long01.glb",
+          "dreiecke": 4108,
+          "groesseKB": 210
+        },
+        "ponytail01": {
+          "datei": "aelter_frau__haar_ponytail01.glb",
+          "dreiecke": 5352,
+          "groesseKB": 247
+        },
+        "braid01": {
+          "datei": "aelter_frau__haar_braid01.glb",
+          "dreiecke": 5518,
+          "groesseKB": 287
+        },
+        "afro01": {
+          "datei": "aelter_frau__haar_afro01.glb",
+          "dreiecke": 2192,
+          "groesseKB": 142
+        }
+      }
     },
     "aelter_neutral": {
       "datei": "aelter_neutral.glb",
@@ -200,7 +369,34 @@
         "gender": 0.5,
         "age": 0.85
       },
-      "groesseKB": 406
+      "groesseKB": 406,
+      "haare": {
+        "short02": {
+          "datei": "aelter_neutral__haar_short02.glb",
+          "dreiecke": 3344,
+          "groesseKB": 129
+        },
+        "long01": {
+          "datei": "aelter_neutral__haar_long01.glb",
+          "dreiecke": 4108,
+          "groesseKB": 210
+        },
+        "ponytail01": {
+          "datei": "aelter_neutral__haar_ponytail01.glb",
+          "dreiecke": 5352,
+          "groesseKB": 248
+        },
+        "braid01": {
+          "datei": "aelter_neutral__haar_braid01.glb",
+          "dreiecke": 5518,
+          "groesseKB": 287
+        },
+        "afro01": {
+          "datei": "aelter_neutral__haar_afro01.glb",
+          "dreiecke": 2192,
+          "groesseKB": 142
+        }
+      }
     },
     "jugend_m": {
       "datei": "jugend_m.glb",
@@ -228,7 +424,34 @@
         "gender": 1.0,
         "age": 0.3
       },
-      "groesseKB": 406
+      "groesseKB": 406,
+      "haare": {
+        "short02": {
+          "datei": "jugend_m__haar_short02.glb",
+          "dreiecke": 3344,
+          "groesseKB": 128
+        },
+        "long01": {
+          "datei": "jugend_m__haar_long01.glb",
+          "dreiecke": 4108,
+          "groesseKB": 210
+        },
+        "ponytail01": {
+          "datei": "jugend_m__haar_ponytail01.glb",
+          "dreiecke": 5352,
+          "groesseKB": 247
+        },
+        "braid01": {
+          "datei": "jugend_m__haar_braid01.glb",
+          "dreiecke": 5518,
+          "groesseKB": 287
+        },
+        "afro01": {
+          "datei": "jugend_m__haar_afro01.glb",
+          "dreiecke": 2192,
+          "groesseKB": 142
+        }
+      }
     },
     "jugend_w": {
       "datei": "jugend_w.glb",
@@ -256,7 +479,34 @@
         "gender": 0.0,
         "age": 0.3
       },
-      "groesseKB": 403
+      "groesseKB": 403,
+      "haare": {
+        "short02": {
+          "datei": "jugend_w__haar_short02.glb",
+          "dreiecke": 3344,
+          "groesseKB": 128
+        },
+        "long01": {
+          "datei": "jugend_w__haar_long01.glb",
+          "dreiecke": 4108,
+          "groesseKB": 209
+        },
+        "ponytail01": {
+          "datei": "jugend_w__haar_ponytail01.glb",
+          "dreiecke": 5352,
+          "groesseKB": 247
+        },
+        "braid01": {
+          "datei": "jugend_w__haar_braid01.glb",
+          "dreiecke": 5518,
+          "groesseKB": 286
+        },
+        "afro01": {
+          "datei": "jugend_w__haar_afro01.glb",
+          "dreiecke": 2192,
+          "groesseKB": 142
+        }
+      }
     },
     "kleinkind": {
       "datei": "kleinkind.glb",
@@ -284,7 +534,34 @@
         "gender": 0.5,
         "age": 0.06
       },
-      "groesseKB": 405
+      "groesseKB": 405,
+      "haare": {
+        "short02": {
+          "datei": "kleinkind__haar_short02.glb",
+          "dreiecke": 3344,
+          "groesseKB": 128
+        },
+        "long01": {
+          "datei": "kleinkind__haar_long01.glb",
+          "dreiecke": 4108,
+          "groesseKB": 210
+        },
+        "ponytail01": {
+          "datei": "kleinkind__haar_ponytail01.glb",
+          "dreiecke": 5352,
+          "groesseKB": 247
+        },
+        "braid01": {
+          "datei": "kleinkind__haar_braid01.glb",
+          "dreiecke": 5518,
+          "groesseKB": 287
+        },
+        "afro01": {
+          "datei": "kleinkind__haar_afro01.glb",
+          "dreiecke": 2192,
+          "groesseKB": 142
+        }
+      }
     },
     "mann_kraeftig": {
       "datei": "mann_kraeftig.glb",
@@ -314,7 +591,34 @@
         "weight": 0.85,
         "muscle": 0.6
       },
-      "groesseKB": 407
+      "groesseKB": 407,
+      "haare": {
+        "short02": {
+          "datei": "mann_kraeftig__haar_short02.glb",
+          "dreiecke": 3344,
+          "groesseKB": 128
+        },
+        "long01": {
+          "datei": "mann_kraeftig__haar_long01.glb",
+          "dreiecke": 4108,
+          "groesseKB": 210
+        },
+        "ponytail01": {
+          "datei": "mann_kraeftig__haar_ponytail01.glb",
+          "dreiecke": 5352,
+          "groesseKB": 247
+        },
+        "braid01": {
+          "datei": "mann_kraeftig__haar_braid01.glb",
+          "dreiecke": 5518,
+          "groesseKB": 287
+        },
+        "afro01": {
+          "datei": "mann_kraeftig__haar_afro01.glb",
+          "dreiecke": 2192,
+          "groesseKB": 142
+        }
+      }
     },
     "frau_kraeftig": {
       "datei": "frau_kraeftig.glb",
@@ -343,7 +647,34 @@
         "age": 0.55,
         "weight": 0.85
       },
-      "groesseKB": 409
+      "groesseKB": 409,
+      "haare": {
+        "short02": {
+          "datei": "frau_kraeftig__haar_short02.glb",
+          "dreiecke": 3344,
+          "groesseKB": 128
+        },
+        "long01": {
+          "datei": "frau_kraeftig__haar_long01.glb",
+          "dreiecke": 4108,
+          "groesseKB": 210
+        },
+        "ponytail01": {
+          "datei": "frau_kraeftig__haar_ponytail01.glb",
+          "dreiecke": 5352,
+          "groesseKB": 247
+        },
+        "braid01": {
+          "datei": "frau_kraeftig__haar_braid01.glb",
+          "dreiecke": 5518,
+          "groesseKB": 287
+        },
+        "afro01": {
+          "datei": "frau_kraeftig__haar_afro01.glb",
+          "dreiecke": 2192,
+          "groesseKB": 142
+        }
+      }
     },
     "mann_schlank": {
       "datei": "mann_schlank.glb",
@@ -372,7 +703,34 @@
         "age": 0.45,
         "weight": 0.15
       },
-      "groesseKB": 406
+      "groesseKB": 406,
+      "haare": {
+        "short02": {
+          "datei": "mann_schlank__haar_short02.glb",
+          "dreiecke": 3344,
+          "groesseKB": 128
+        },
+        "long01": {
+          "datei": "mann_schlank__haar_long01.glb",
+          "dreiecke": 4108,
+          "groesseKB": 210
+        },
+        "ponytail01": {
+          "datei": "mann_schlank__haar_ponytail01.glb",
+          "dreiecke": 5352,
+          "groesseKB": 247
+        },
+        "braid01": {
+          "datei": "mann_schlank__haar_braid01.glb",
+          "dreiecke": 5518,
+          "groesseKB": 287
+        },
+        "afro01": {
+          "datei": "mann_schlank__haar_afro01.glb",
+          "dreiecke": 2192,
+          "groesseKB": 142
+        }
+      }
     },
     "frau_schlank": {
       "datei": "frau_schlank.glb",
@@ -401,7 +759,34 @@
         "age": 0.45,
         "weight": 0.15
       },
-      "groesseKB": 403
+      "groesseKB": 403,
+      "haare": {
+        "short02": {
+          "datei": "frau_schlank__haar_short02.glb",
+          "dreiecke": 3344,
+          "groesseKB": 128
+        },
+        "long01": {
+          "datei": "frau_schlank__haar_long01.glb",
+          "dreiecke": 4108,
+          "groesseKB": 210
+        },
+        "ponytail01": {
+          "datei": "frau_schlank__haar_ponytail01.glb",
+          "dreiecke": 5352,
+          "groesseKB": 247
+        },
+        "braid01": {
+          "datei": "frau_schlank__haar_braid01.glb",
+          "dreiecke": 5518,
+          "groesseKB": 287
+        },
+        "afro01": {
+          "datei": "frau_schlank__haar_afro01.glb",
+          "dreiecke": 2192,
+          "groesseKB": 142
+        }
+      }
     },
     "hochbetagt": {
       "datei": "hochbetagt.glb",
@@ -429,7 +814,34 @@
         "gender": 0.5,
         "age": 1.0
       },
-      "groesseKB": 406
+      "groesseKB": 406,
+      "haare": {
+        "short02": {
+          "datei": "hochbetagt__haar_short02.glb",
+          "dreiecke": 3344,
+          "groesseKB": 128
+        },
+        "long01": {
+          "datei": "hochbetagt__haar_long01.glb",
+          "dreiecke": 4108,
+          "groesseKB": 210
+        },
+        "ponytail01": {
+          "datei": "hochbetagt__haar_ponytail01.glb",
+          "dreiecke": 5352,
+          "groesseKB": 247
+        },
+        "braid01": {
+          "datei": "hochbetagt__haar_braid01.glb",
+          "dreiecke": 5518,
+          "groesseKB": 287
+        },
+        "afro01": {
+          "datei": "hochbetagt__haar_afro01.glb",
+          "dreiecke": 2192,
+          "groesseKB": 142
+        }
+      }
     }
   }
 }

@@ -59,6 +59,10 @@ export function applyAccessorySlot(fig: any, slot: string, accName: string | nul
   const old = fig.appearanceMeshes[slot];
   if (old) { old.parent?.remove(old); delete fig.appearanceMeshes[slot]; }
   if (!accName) return;
+  // 3D statt flachem Bild (figur-stil.ts): Haare beim Mannequin, Brille bei Verfeinert/Mannequin.
+  const stilS: string = fig._stilSchluessel || 'klassisch';
+  if (stilS.startsWith('mannequin') && accName.startsWith('hair-')) return;
+  if (stilS !== 'klassisch' && accName === 'spectacles') return;
   const spec = PLACEMENT_SPEC.accessories?.[accName];
   if (!spec) return;
   const boneName = spec.bone === 'neck' ? 'head' : spec.bone;
@@ -79,7 +83,7 @@ export function applyAccessorySlot(fig: any, slot: string, accName: string | nul
 }
 
 // Nach einem Umbau der Figurenart Gesichtsbild neu anbringen.
-setGesichtNeuAnbringen((fig: any) => applyFaceToFig(fig, fig.appearance?.face ?? null));
+setGesichtNeuAnbringen((fig: any) => applyAppearanceToFig(fig, {}));
 
 export function applyAppearanceToFig(fig: any, appearance: any): void {
   if (!appearance) return;
