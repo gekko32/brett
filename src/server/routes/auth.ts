@@ -52,7 +52,8 @@ authRouter.get('/auth/login', asyncHandler(async (req: any, res: any) => {
   const returnTo = typeof req.query.returnTo === 'string' ? req.query.returnTo : '/';
   const state = Buffer.from(JSON.stringify({ returnTo })).toString('base64url');
   const redirectUri = `${BRETT_PUBLIC_URL}/auth/callback`;
-  const url = buildAuthorizationUrl(config, { scope: 'openid profile', redirect_uri: redirectUri, state });
+  // email (06.11.2026): Admin-Erkennung über die Namensliste (auth.adminListe).
+  const url = buildAuthorizationUrl(config, { scope: 'openid profile email', redirect_uri: redirectUri, state });
   res.redirect(url.toString());
 }));
 

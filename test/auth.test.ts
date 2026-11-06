@@ -225,3 +225,18 @@ test('T001932-A6: *.svc.cluster.local and localhost remain cluster-internal', ()
   assert.equal(resolveOidcEnv({ POCKET_ID_URL: 'http://pocket-id.workspace.svc.cluster.local:1411' } as NodeJS.ProcessEnv).isClusterHttp, true);
   assert.equal(resolveOidcEnv({ POCKET_ID_URL: 'http://localhost:1411' } as NodeJS.ProcessEnv).isClusterHttp, true);
 });
+
+// Admin nach Namen (Gerald 06.11.2026): wie PORTAL_ADMIN_USERNAME der Website.
+import { adminListe, STANDARD_ADMINS } from '../src/server/auth';
+test('Admin über Namensliste: Benutzername oder bestätigte E-Mail, Patrick nicht', () => {
+  const liste = adminListe({} as any);
+  assert.equal(isAdminFromClaims({ preferred_username: 'Quamain' }, liste), true);
+  assert.equal(isAdminFromClaims({ email: 'quamain@web.de' }, liste), true);
+  assert.equal(isAdminFromClaims({ email: 'quamain@web.de', email_verified: false }, liste), false, 'unbestätigte Adresse zählt nicht');
+  assert.equal(isAdminFromClaims({ preferred_username: 'paddione', email: 'patrick@korczewski.de' }, liste), false);
+  assert.equal(isAdminFromClaims({ preferred_username: 'klientin' }, liste), false);
+  assert.ok(!STANDARD_ADMINS.includes('paddione'));
+  const eigene = adminListe({ BRETT_ADMIN_USERNAMES: ' Anna , x@y.de ' } as any);
+  assert.equal(isAdminFromClaims({ preferred_username: 'anna' }, eigene), true);
+  assert.equal(isAdminFromClaims({ preferred_username: 'quamain' }, eigene), false, 'Umgebungsvariable ersetzt die Vorbelegung');
+});

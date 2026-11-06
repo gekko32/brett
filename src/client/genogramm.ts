@@ -17,6 +17,7 @@ import {
 import { EREIGNISSE } from './person-catalog';
 import { ebeneText, rolleText, ereignisText, artText } from './katalog-texte';
 import type { PultNachricht } from './steuerpult-sync';
+import { zumBrettKnopf } from './zum-brett';
 
 type Fig = GenoPerson & { x: number; z: number; color?: string; [k: string]: any };
 
@@ -1021,6 +1022,8 @@ function svgSpeichern(): void {
 // ── Start ────────────────────────────────────────────────────────────────────
 function start(): void {
   initLang();
+  // Weg zurück zum Brett (Gerald 06.11.2026: auf dem Handy öffnet sich das Genogramm als eigener Tab).
+  if (room) document.querySelector('header')?.prepend(zumBrettKnopf(room));
   applyTranslations();
   document.title = `${t('geno.title')} · Systembrett`;
   if (!room) { status(t('pult.noRoom'), true); return; }

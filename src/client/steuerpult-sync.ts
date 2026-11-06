@@ -5,6 +5,7 @@
 // Herkunft). Solange das Steuerpult lebt (Herzschlag), zeigt das Brett nur das
 // Spielfeld (Klasse `praesentation` am body). Außerdem: Kamera und
 // Beziehungs-Ebene vom Pult aus steuern.
+import { istTouchGeraet } from './zum-brett';
 
 export type KameraAktion = 'links' | 'rechts' | 'hoch' | 'runter' | 'naeher' | 'weiter' | 'zurueck' | 'draufsicht';
 
@@ -166,8 +167,9 @@ export function schalteSeitenleiste(): void {
     b.addEventListener('click', aktion);
     kopf.append(b);
   };
-  knopf('↗', 'Als eigenes Fenster', () => { leiste.remove(); window.dispatchEvent(new Event('resize')); void oeffneFenster(); });
-  knopf('✕', 'Schließen', () => { leiste.remove(); window.dispatchEvent(new Event('resize')); });
+  // Handy/Tablet (Gerald 06.11.2026): eigenes Fenster wäre dort ein Tab ohne Rückweg → nicht anbieten.
+  if (!istTouchGeraet()) knopf('↗', 'Als eigenes Fenster', () => { leiste.remove(); window.dispatchEvent(new Event('resize')); void oeffneFenster(); });
+  knopf('✕ Zum Brett', 'Steuerpult schließen, zurück zum Brett', () => { leiste.remove(); window.dispatchEvent(new Event('resize')); });
   const rahmen = document.createElement('iframe');
   rahmen.src = `/steuerpult.html?room=${encodeURIComponent(room)}&eingebettet=1`;
   Object.assign(rahmen.style, { flex: '1', border: '0', width: '100%' } as CSSStyleDeclaration);
