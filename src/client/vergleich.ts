@@ -51,8 +51,11 @@ export function zeichnePlan(plan: Plan, r: Rahmen): SVGSVGElement {
   }
   for (const m of plan.moebel) {
     const g = s('g', { transform: `translate(${m.x} ${m.z}) rotate(${-m.facingY * 180 / Math.PI})` });
-    g.append(s('rect', { x: -m.breite / 2, y: -m.tiefe / 2, width: m.breite, height: m.tiefe, rx: 0.04,
-      fill: 'var(--moebel)', stroke: 'var(--muted)', 'stroke-width': 0.02 }));
+    const fuellung = m.art === 'wand' ? '#cfc8bb' : m.art === 'tuer' ? 'none' : 'var(--moebel)';
+    g.append(m.art === 'rundtisch'
+      ? s('circle', { r: m.breite / 2, fill: fuellung, stroke: 'var(--muted)', 'stroke-width': 0.02 })
+      : s('rect', { x: -m.breite / 2, y: -m.tiefe / 2, width: m.breite, height: m.tiefe, rx: 0.04,
+          fill: fuellung, stroke: m.art === 'tuer' ? '#c8a96e' : 'var(--muted)', 'stroke-width': m.art === 'tuer' ? 0.05 : 0.02 }));
     svg.append(g);
   }
   for (const a of plan.anker) {

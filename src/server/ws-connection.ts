@@ -209,6 +209,7 @@ export function attachWsServer(wss: WebSocketServer, deps: WsDeps): void {
                 lines: freshState.lines ?? [],       // NEU T000467
                 // Regiebuch (06.11.2026): sichtbare Frage nach Neuladen wieder zeigen.
                 regiebuchFrage: freshState.regiebuchFrage ?? null,
+                moebel: freshState.moebel ?? [],   // Möbel und Wände 06.11.2026
               }));
             } catch {}
           }

@@ -6,6 +6,7 @@ import {
   handleAdminRoundPause,
   handleAdminCoachingStepsSet,
   handleAdminRegiebuchFrage,
+  handleAdminMoebelSet,
   handleAdminRoundStart,
   handleSessionUndo,
   handleSessionRedo,
@@ -67,6 +68,9 @@ export async function handleAdminMessage(ws: any, msg: any, adminRoom: string, d
       break;
     case 'admin_coaching_steps_set':
       handleAdminCoachingStepsSet(ws, msg, adminRoom, deps);
+      break;
+    case 'admin_moebel_set':
+      handleAdminMoebelSet(ws, msg, adminRoom, deps);
       break;
     case 'admin_regiebuch_frage':
       handleAdminRegiebuchFrage(ws, msg, adminRoom, deps);

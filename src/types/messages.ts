@@ -1,3 +1,4 @@
+import type { Moebel } from './moebel';
 import type { Anchor, BrettLine, Figure, FigureAppearance, FigureType, LineType, OptikSettings, Participant, Phase, Role, Zone } from './state';
 
 // ── Client → Server ──────────────────────────────────────────────
@@ -50,8 +51,9 @@ export type ClientMessage =
 
 // ── Server → Client ──────────────────────────────────────────────
 export type ServerMessage =
-  | { type: 'snapshot'; figures: Figure[]; stiffness?: number; locks?: ServerLock[]; phase?: Phase; sessionCode?: string | null; optik?: OptikSettings; participants?: Participant[]; moderation?: { spotlight: string | null; dim: string | null; freeze: boolean }; anchors?: Anchor[]; zones?: Zone[]; lines?: BrettLine[]; regiebuchFrage?: string | null }
+  | { type: 'snapshot'; figures: Figure[]; stiffness?: number; locks?: ServerLock[]; phase?: Phase; sessionCode?: string | null; optik?: OptikSettings; participants?: Participant[]; moderation?: { spotlight: string | null; dim: string | null; freeze: boolean }; anchors?: Anchor[]; zones?: Zone[]; lines?: BrettLine[]; regiebuchFrage?: string | null; moebel?: Moebel[] }
   | { type: 'regiebuch_frage'; text: string | null }
+  | { type: 'moebel_changed'; moebel: Moebel[] }
   | { type: 'add'; figure: Figure }
   | { type: 'move'; id: string; x: number; z: number; facingY: number }
   | { type: 'jump'; id: string }

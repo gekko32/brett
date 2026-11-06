@@ -12,6 +12,7 @@ import { toExportLine } from './ws-export-mappers';
 import { handleGroundMessage } from './ws-message-ground';
 import { handleSnapshotMessage } from './ws-message-snapshot';
 import { zeigeRegiebuchFrage } from './regiebuch-frage';
+import { setzeMoebel } from './moebel-3d';
 import { handleFigureMessage } from './ws-message-figures';
 
 // ── Lobby/presence/session state (pure reducer) ─────────────────────────────
@@ -94,11 +95,16 @@ export function onWsMessage(evt: MessageEvent): void {
   const stiffSlider = document.getElementById('stiffness') as HTMLInputElement | null;
 
   switch (msg.type) {
+    case 'moebel_changed':
+      setzeMoebel(msg.moebel);
+      break;
     case 'regiebuch_frage':
       zeigeRegiebuchFrage(msg.text);
       break;
     case 'snapshot':
-      zeigeRegiebuchFrage(msg.regiebuchFrage ?? null);
+      // Verkürzte Snapshots (Vorlage laden) tragen Frage/Möbel nicht immer → nur setzen, wenn vorhanden.
+      if ('regiebuchFrage' in msg) zeigeRegiebuchFrage(msg.regiebuchFrage ?? null);
+      if ('moebel' in msg) setzeMoebel(msg.moebel);
       handleSnapshotMessage(msg, {
         getLobbyState: () => lobbyState,
         setLobbyState: (s) => { lobbyState = s; },

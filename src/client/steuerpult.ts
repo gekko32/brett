@@ -20,6 +20,7 @@ import { naechsteHaltung } from './presets-logik';
 import { ebeneText, ebeneHinweis, rolleText, ereignisText, artText, bodenText } from './katalog-texte';
 import { klient, klientBlock, klientName, starteKlient, aufstellungenUrl } from './pult-klient';
 import { rb, regiebuchBlock, ladeRegiebuecher } from './pult-regiebuch';
+import { moebelZustand, moebelBlock } from './pult-moebel';
 
 /** Zuletzt geladene gespeicherte Aufstellung: neue Speicherungen vermerken sie als Herkunft. */
 let geladenVon: string | null = null;
@@ -130,6 +131,10 @@ function empfangen(m: any): void {
       if (m.optik) optik = { ...optik, ...m.optik };
       linien.clear();
       for (const l of m.lines || []) linien.set(l.id, { ...l });
+      if ('moebel' in m) moebelZustand.liste = Array.isArray(m.moebel) ? m.moebel : [];
+      break;
+    case 'moebel_changed':
+      moebelZustand.liste = Array.isArray(m.moebel) ? m.moebel : [];
       break;
     case 'line_created':
       if (m.line?.id) linien.set(m.line.id, { ...m.line });
@@ -223,7 +228,7 @@ function setStatus(text: string): void {
   if (s) s.textContent = text;
 }
 
-const offen: Record<string, boolean> = { klient: true, sitzung: true, regiebuch: true, ansicht: false, personen: true, katalog: false, figur: true, angaben: false, beziehungen: true };
+const offen: Record<string, boolean> = { klient: true, sitzung: true, regiebuch: true, moebel: true, ansicht: false, personen: true, katalog: false, figur: true, angaben: false, beziehungen: true };
 function block(key: string, titel: string, ...inhalt: Node[]): HTMLDetailsElement {
   const d = h('details', { class: 'block', open: offen[key] }, h('summary', {}, titel), ...inhalt);
   d.addEventListener('toggle', () => { offen[key] = d.open; });
@@ -242,6 +247,7 @@ async function speichereAufstellung(titel: string): Promise<boolean> {
     const state: any = { ...basis, figures: [...figuren.values()], lines: [...linien.values()], optik };
     delete state.regiebuchFrage;
     if (rb.notiz.trim()) state.sitzungsnotiz = rb.notiz.trim();
+    state.moebel = moebelZustand.liste;
     const r = await fetch('/api/snapshots', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: titel.slice(0, 200), room_token: room, state,
@@ -717,11 +723,13 @@ function zeichnen(erzwingen = false): void {
   const s = sitzungBlock(); s.dataset.block = 'sitzung';
   const r = regiebuchBlock({ h, knopf, block, neuZeichnen: () => zeichnen(true) },
     { room, senden, speichereStand: speichereAufstellung }); r.dataset.block = 'regiebuch';
+  const mb = moebelBlock({ h, knopf, block, neuZeichnen: () => zeichnen(true) },
+    { senden, belegtePlaetze: () => [...figuren.values()].map(x => ({ x: x.x, z: x.z })) }); mb.dataset.block = 'moebel';
   const a = ansichtBlock(); a.dataset.block = 'ansicht';
   const sp = speichernBlock(); sp.dataset.block = 'teilen';
   const p = personenBlock(); p.dataset.block = 'personen';
   const f = figurBlock();
-  main.append(s, r, a, sp, p);
+  main.append(s, r, mb, a, sp, p);
   if (f) { f.dataset.block = 'figur'; main.append(f); }
   else main.append(h('div', { class: 'klein', style: { padding: '0 4px' } }, t('pult.selectHint')));
 }

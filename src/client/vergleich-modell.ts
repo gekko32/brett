@@ -6,6 +6,8 @@
 // Das Fenster zeigt zwei Aufstellungen im gleichen Maßstab und nennt nur
 // Tatsachen (welche Namen nur in einer der beiden vorkommen).
 
+import { normalisiereMoebel, grundriss } from '../types/moebel';
+
 export interface PlanFigur { id: string; x: number; z: number; facingY: number; label: string; color: string; scale: number; opacity: number }
 export interface PlanZone { x: number; z: number; shape: 'rect' | 'circle'; width: number; height: number; radius: number; label: string; color: string; opacity: number; frame: boolean }
 export interface PlanAnker { x: number; z: number; label: string; color: string }
@@ -41,9 +43,9 @@ export function planAusState(state: any): Plan {
   const linien: PlanLinie[] = liste(s.lines)
     .filter(l => l && !l.struktur && ids.has(l.fromId) && ids.has(l.toId))
     .map(l => ({ fromId: l.fromId, toId: l.toId, label: text(l.label) || text(l.art), color: LINIENFARBE[l.lineType] || '#2f6fb0' }));
-  const moebel: PlanMoebel[] = liste(s.moebel).filter(m => m && typeof m === 'object').map(m => ({
-    x: zahl(m.x, 0), z: zahl(m.z, 0), facingY: zahl(m.facingY, 0), art: text(m.art),
-    breite: zahl(m.breite, 0.5), tiefe: zahl(m.tiefe, 0.5),
+  // Möbel und Wände (06.11.2026): gleiche Prüfung und Maße wie auf dem Brett.
+  const moebel: PlanMoebel[] = normalisiereMoebel(liste(s.moebel)).map(m => ({
+    x: m.x, z: m.z, facingY: m.facingY, art: m.art, ...grundriss(m),
   }));
   const notiz = text(s.sitzungsnotiz);
   return notiz ? { figuren, zonen, anker, linien, moebel, notiz } : { figuren, zonen, anker, linien, moebel };

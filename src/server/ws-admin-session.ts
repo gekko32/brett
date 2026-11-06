@@ -144,3 +144,11 @@ export function handleSessionRedo(ws: any, _msg: any, room: string, deps: WsDeps
     } catch {}
   }
 }
+
+/** Möbel und Wände (06.11.2026): ganze Liste setzen, an alle verteilen. */
+export function handleAdminMoebelSet(_ws: any, msg: any, room: string, deps: WsDeps): void {
+  deps.applyMutation(room, { type: 'moebel_set', moebel: msg.moebel });
+  const moebel = deps.buildStateFromMutations(room)?.moebel ?? [];
+  deps.broadcast(room, { type: 'moebel_changed', moebel });
+  deps.schedulePersist(room);
+}
