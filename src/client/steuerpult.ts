@@ -22,6 +22,7 @@ import { klient, klientBlock, klientName, starteKlient, aufstellungenUrl } from 
 import { rb, regiebuchBlock, ladeRegiebuecher } from './pult-regiebuch';
 import { moebelZustand, moebelBlock } from './pult-moebel';
 import { sitzplaetze, istBesetzt } from '../types/moebel';
+import { zumBrettKnopf } from './zum-brett';
 
 /** Zuletzt geladene gespeicherte Aufstellung: neue Speicherungen vermerken sie als Herkunft. */
 let geladenVon: string | null = null;
@@ -840,6 +841,8 @@ function start(): void {
   const kopf = document.querySelector('header');
   // Drittes Fenster: Genogramm (gleiche Personen und Beziehungen, als Stammbaum).
   kopf?.querySelector('.zeile')?.append(h('button', { type: 'button', onclick: oeffneGenogramm }, '🧬 ' + t('geno.title')));
+  // Als eigener Tab/Fenster (Handy!): Weg zurück zum Brett (Gerald 06.11.2026).
+  if (!eingebettet && !imBildImBild && room) kopf?.querySelector('.zeile')?.prepend(zumBrettKnopf(room));
   if (kopf && window.top === window) {
     // Tipp: Spielfeld links daneben legen, dann verschwindet nichts dahinter.
     kopf.append(h('div', { class: 'tipp' }, t('pult.snapHint'), ' ',

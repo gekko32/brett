@@ -72,11 +72,27 @@ export async function getOidcClient(): Promise<Configuration> {
   return oidcConfig;
 }
 
-export function isAdminFromClaims(claims: any): boolean {
+/**
+ * Admins nach Namen (Gerald 06.11.2026): Pocket ID liefert das isAdmin-Kennzeichen
+ * nicht für jedes Konto – die Website erkennt Admins deshalb zusätzlich über
+ * PORTAL_ADMIN_USERNAME. Das Brett macht es genauso: BRETT_ADMIN_USERNAMES
+ * (Benutzernamen oder vollständige E-Mail-Adressen, kommagetrennt).
+ * Vorbelegt nur mit Geralds Konten – ausdrücklich ohne Patrick.
+ */
+export const STANDARD_ADMINS = 'gekko,quamain,quamain@web.de';
+export function adminListe(env: NodeJS.ProcessEnv = process.env): Set<string> {
+  return new Set((env.BRETT_ADMIN_USERNAMES || STANDARD_ADMINS)
+    .split(',').map(s => s.trim().toLowerCase()).filter(Boolean));
+}
+
+export function isAdminFromClaims(claims: any, liste: Set<string> = adminListe()): boolean {
   // Pocket ID exposes admin status as a single boolean isAdmin claim — there
   // are no realm roles. Kept the old function name for compat with the
   // requireAdmin middleware that imports it.
   if (claims?.isAdmin === true) return true;
+  const name = typeof claims?.preferred_username === 'string' ? claims.preferred_username.toLowerCase() : '';
+  const mail = typeof claims?.email === 'string' && claims?.email_verified !== false ? claims.email.toLowerCase() : '';
+  if ((name && liste.has(name)) || (mail && liste.has(mail))) return true;
   // Backward-compat shim: during the Pocket ID migration window tokens from
   // both providers may be valid. Honour the Keycloak realm_access.roles claim
   // so existing unit-test fixtures and any not-yet-rotated sessions still
