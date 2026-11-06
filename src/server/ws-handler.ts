@@ -99,7 +99,7 @@ export const RELAY_TYPES = new Set<string>([
 
 // Admin message types
 export const ADMIN_TYPES = new Set<string>([
-  'admin_kick', 'admin_broadcast', 'admin_session_create', 'admin_handoff_token', 'admin_round_stop', 'admin_round_pause', 'admin_coaching_steps_set',
+  'admin_kick', 'admin_session_create', 'admin_handoff_token', 'admin_round_stop', 'admin_round_pause', 'admin_coaching_steps_set', 'admin_regiebuch_frage',
   'admin_round_start', 'admin_assign_role', 'admin_assign_figure',
   'admin_set_template', 'admin_set_optik', 'admin_set_board_template',  // T900361 — Lobby-Dropdown → Board-Template
   'figure_type_set',

@@ -4,8 +4,15 @@
 import { Router } from 'express';
 import * as db from '../db';
 import * as auth from '../auth';
+import { istUuid } from './klienten';
 
 export const snapshotsRouter = Router();
+
+/** :id muss eine UUID sein (sonst wirft Postgres und es gäbe einen 500er). */
+function idPruefen(req: any, res: any, next: any) {
+  if (!istUuid(req.params.id)) return res.status(400).json({ error: 'id ungültig' });
+  next();
+}
 
 function asyncHandler(fn: any) {
   return (req: any, res: any, next: any) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -20,7 +27,7 @@ function asyncHandler(fn: any) {
 // standalone filter (curated templates need no room/customer). room/customer_id
 // still filter as before; an empty filter set yields `valid:false`.
 export function buildSnapshotListQuery(
-  opts: { room?: string | null; customerId?: string | null; isTemplate?: boolean; savedOnly?: boolean }
+  opts: { room?: string | null; customerId?: string | null; isTemplate?: boolean; savedOnly?: boolean; ohneKlient?: boolean }
 ): { sql: string; args: any[]; valid: boolean } {
   const where: string[] = [];
   const args: any[] = [];
@@ -29,8 +36,11 @@ export function buildSnapshotListQuery(
   if (opts.isTemplate) { where.push('is_template = true'); }
   // Steuerpult (16.10.2026): alle gespeicherten Aufstellungen (keine Vorlagen).
   if (opts.savedOnly) { where.push('is_template = false'); }
+  // Steuerpult ohne gewählten Klienten (06.11.2026): nur Aufstellungen ohne
+  // Klient, damit keine Klienten gemischt erscheinen.
+  if (opts.savedOnly && opts.ohneKlient) { where.push('customer_id IS NULL'); }
   const sql =
-    `SELECT id, name, room_token, customer_id, is_template, created_at
+    `SELECT id, name, room_token, customer_id, is_template, created_at, kopie_von
        FROM brett_snapshots` +
     (where.length ? `\n      WHERE ${where.join(' AND ')}` : '') +
     `\n      ORDER BY created_at DESC
@@ -42,10 +52,13 @@ export function buildSnapshotListQuery(
 // to false; name (≤200) and state.figures[] are required.
 export function parseSnapshotInsert(
   body: any
-): { valid: boolean; values?: { room_token: string | null; customer_id: string | null; name: string; state: any; is_template: boolean } } {
+): { valid: boolean; values?: { room_token: string | null; customer_id: string | null; name: string; state: any; is_template: boolean; kopie_von: string | null } } {
   const b = body || {};
   if (!b.name || typeof b.name !== 'string' || b.name.length > 200) return { valid: false };
   if (!b.state || typeof b.state !== 'object' || !Array.isArray(b.state.figures)) return { valid: false };
+  // Klient und Herkunft (Kopie) müssen gültige IDs sein (Gerald 06.11.2026).
+  if (b.customer_id && !istUuid(b.customer_id)) return { valid: false };
+  if (b.kopie_von && !istUuid(b.kopie_von)) return { valid: false };
   return {
     valid: true,
     values: {
@@ -54,8 +67,15 @@ export function parseSnapshotInsert(
       name: b.name,
       state: b.state,
       is_template: b.is_template === true,
+      kopie_von: b.kopie_von || null,
     },
   };
+}
+
+/** Name der Kopie: Wunschname oder „<Name> – Kopie“, höchstens 200 Zeichen. */
+export function kopieName(original: string, wunsch?: unknown): string {
+  const w = typeof wunsch === 'string' ? wunsch.trim() : '';
+  return (w || (original + ' – Kopie')).slice(0, 200);
 }
 
 // D8 / SEC-2 — Pure: may this request create a curated TEMPLATE (is_template=true)?
@@ -76,9 +96,14 @@ snapshotsRouter.get('/api/snapshots', asyncHandler(async (req: any, res: any) =>
   // gespeichert=true: alle Aufstellungen – nur für Leiter/Admin (Namen können
   // Klientendaten enthalten; andere angemeldete Nutzer dürfen sie nicht sehen).
   const savedOnly = req.query.gespeichert === 'true';
-  if (savedOnly && !req.session?.userId) return res.status(401).json({ error: 'login required' });
-  if (savedOnly && !req.session?.isAdmin) return res.status(403).json({ error: 'admin required' });
-  const q = buildSnapshotListQuery({ room, customerId, isTemplate, savedOnly });
+  // Klientenbezug (06.11.2026): Listen nach Raum oder Klient zeigen
+  // Klientendaten → ebenfalls nur Admin. Frei bleibt nur die Vorlagenliste.
+  const brauchtAdmin = savedOnly || !!room || !!customerId;
+  if (brauchtAdmin && !req.session?.userId) return res.status(401).json({ error: 'login required' });
+  if (brauchtAdmin && !req.session?.isAdmin) return res.status(403).json({ error: 'admin required' });
+  if (customerId && !istUuid(customerId)) return res.status(400).json({ error: 'customer_id ungültig' });
+  const ohneKlient = req.query.ohne_klient === 'true';
+  const q = buildSnapshotListQuery({ room, customerId, isTemplate, savedOnly, ohneKlient });
   if (!q.valid) {
     return res.status(400).json({ error: 'room, customer_id or is_template required' });
   }
@@ -87,13 +112,15 @@ snapshotsRouter.get('/api/snapshots', asyncHandler(async (req: any, res: any) =>
 }));
 
 // Load one snapshot.
-snapshotsRouter.get('/api/snapshots/:id', auth.requireSession, asyncHandler(async (req: any, res: any) => {
+snapshotsRouter.get('/api/snapshots/:id', auth.requireSession, idPruefen, asyncHandler(async (req: any, res: any) => {
   const { rows } = await db.getPool().query(
-    `SELECT id, name, state, customer_id, room_token, created_at
+    `SELECT id, name, state, customer_id, room_token, created_at, kopie_von
        FROM brett_snapshots WHERE id = $1`,
     [req.params.id]
   );
   if (!rows[0]) return res.status(404).json({ error: 'not found' });
+  // Aufstellung eines Klienten: nur Admin (06.11.2026).
+  if (rows[0].customer_id && !req.session?.isAdmin) return res.status(403).json({ error: 'admin required' });
   res.json(rows[0]);
 }));
 
@@ -108,11 +135,42 @@ snapshotsRouter.post('/api/snapshots', auth.requireSession, asyncHandler(async (
   if (v.is_template && !canCreateTemplate(req)) {
     return res.status(403).json({ error: 'forbidden: template creation is admin-only' });
   }
+  // Einem Klienten zuordnen darf nur Admin, und nur Coaching-Klienten.
+  if (v.customer_id) {
+    if (!req.session?.isAdmin) return res.status(403).json({ error: 'admin required' });
+    const k = await db.getPool().query('SELECT 1 FROM brett.coaching_klienten WHERE customer_id = $1', [v.customer_id]);
+    if (!k.rows[0]) return res.status(422).json({ error: 'kein Coaching-Klient' });
+  }
   const { rows } = await db.getPool().query(
-    `INSERT INTO brett_snapshots (room_token, customer_id, name, state, is_template)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO brett_snapshots (room_token, customer_id, name, state, is_template, kopie_von)
+     VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING id`,
-    [v.room_token, v.customer_id, v.name, v.state, v.is_template]
+    [v.room_token, v.customer_id, v.name, v.state, v.is_template, v.kopie_von]
   );
   res.status(201).json({ id: rows[0].id });
+}));
+
+// Kopie anlegen (Baustein 3): gleicher Klient, gleicher Stand, Herkunft
+// vermerkt. Das Original bleibt unverändert – eine gespeicherte Aufstellung
+// lässt sich ohnehin nicht überschreiben, nur neu speichern oder löschen.
+snapshotsRouter.post('/api/snapshots/:id/kopie', auth.requireAdmin, idPruefen, asyncHandler(async (req: any, res: any) => {
+  const orig = await db.getPool().query(
+    'SELECT name FROM brett_snapshots WHERE id = $1 AND is_template = false', [req.params.id]);
+  if (!orig.rows[0]) return res.status(404).json({ error: 'not found' });
+  const { rows } = await db.getPool().query(
+    `INSERT INTO brett_snapshots (room_token, customer_id, name, state, is_template, kopie_von)
+     SELECT room_token, customer_id, $2, state, false, id
+       FROM brett_snapshots WHERE id = $1
+     RETURNING id, name`,
+    [req.params.id, kopieName(orig.rows[0].name, req.body?.name)]
+  );
+  res.status(201).json(rows[0]);
+}));
+
+// Eine gespeicherte Aufstellung löschen (Baustein 2). Nur Admin, keine Vorlagen.
+snapshotsRouter.delete('/api/snapshots/:id', auth.requireAdmin, idPruefen, asyncHandler(async (req: any, res: any) => {
+  const r = await db.getPool().query(
+    'DELETE FROM brett_snapshots WHERE id = $1 AND is_template = false RETURNING id', [req.params.id]);
+  if (!r.rows[0]) return res.status(404).json({ error: 'not found' });
+  res.json({ ok: true });
 }));

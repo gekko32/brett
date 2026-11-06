@@ -16,7 +16,6 @@ import * as figPanel from './ui/fig-panel';
 import * as hud from './ui/hud';
 import * as appearance from './ui/appearance';
 import * as appearanceBadge from './ui/appearance-badge';
-import * as persons from './ui/persons';
 import { initCatalogPanel } from './ui/catalog-panel';
 import { initPersonDetails } from './ui/person-details';
 import { initSessionPanel } from './ui/session-panel';
@@ -116,7 +115,6 @@ export async function bootBoard(): Promise<void> {
   // ── UI init ────────────────────────────────────────────────────────
   figPanel.initFigPanel();
   appearance.initAppearance();
-  persons.initPersons();
   initCatalogPanel();
   initPersonDetails();
   initSessionPanel();

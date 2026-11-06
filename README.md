@@ -1,60 +1,29 @@
-# Systemisches Brett (mentolder)
+# Systembrett (mentolder)
 
-Geralds Fassung des Systembretts für brett.mentolder.de. Ausgangspunkt ist
-`components/brett` aus [Paddione/Bachelorprojekt](https://github.com/Paddione/Bachelorprojekt)
-(Stand 24b92d407, 16.10.2026), weiterentwickelt um Steuerpult, Genogramm,
-Personenkatalog, Beziehungen und Übersetzung (DE/EN/FR/ES).
+Geralds digitales Systembrett für brett.mentolder.de: 3D-Brett, Steuerpult
+für den Coach, Genogramm, Klientenbezug, Vergleich von Aufstellungen und
+Regiebücher. Ein Node-Server (Port 3000) liefert Oberfläche, WebSocket-Abgleich
+und Speicherung in Postgres.
 
-- **Image:** jeder Push auf `main` baut `ghcr.io/gekko32/brett:latest` (siehe `.github/workflows/build.yml`).
+- **Image:** jeder Push auf `main` baut `ghcr.io/gekko32/brett:latest`
+  (`.github/workflows/build.yml`). `main` geht damit nach etwa 20 Minuten live.
 - **Ausrollen:** `gekko32/mentolder-prod` prüft alle 20 Minuten auf ein neues Image.
-- **Lokal:** `lokal/start.ps1` (siehe dort).
+- **Lokal:** `lokal/start.ps1` oder `lokal/vorschau.ps1`; der Datenbankzugang
+  liegt in `lokal/.env.lokal` (nicht im Repo).
+- **Datenbank:** Änderungen in `src/server/migrations/` laufen bei jedem Start
+  (idempotent).
+- **Tests:** `MOCK_DB=true npx tsx --test test/*.test.ts test/*.test.js test/*.test.mjs`
 
----
+Arbeitsstand und Entscheidungen: `technik/hetzner/BRETT-*.md` im Arbeitsordner.
 
-## Ursprüngliche Beschreibung
+## Schalter (Feature Flags)
 
-3D systemic-constellation board served from a single Node.js pod. Static HTML + WebSocket sync + REST snapshots, all on port 3000.
+`window.__brettFeatures['name']`, gesetzt über die ConfigMap `brett-features`:
 
-For the full design rationale and API contract see [`docs/superpowers/specs/2026-04-25-systemisches-brett-design.md`](../docs/superpowers/specs/2026-04-25-systemisches-brett-design.md).
-
-## Local dev
-
-Build and run the container locally against your dev database:
-
-```bash
-docker build -t workspace-brett .
-docker run --rm -p 3000:3000 \
-  -e DATABASE_URL="postgres://user:pass@host.docker.internal:5432/workspace" \
-  workspace-brett
-```
-
-## Feature Flags
-
-Brett verwendet `window.__brettFeatures['flag-name']` für Dark-Launch-Features.
-Die Flags werden über die Kubernetes ConfigMap `brett-features` gesetzt:
-
-| Flag | Beschreibung | Status |
-|------|-------------|--------|
-| `replay` | Timeline/Replay-UI für Board-Sessions (T000472) | dark-launch |
-| `t000468-ground-anchors` | Boden-Anker & Zonen/Flächen (E1) | **default-on** (T001931) |
-| `sf-t000465` | Free-Fly-Kamera | **default-on** (T001931) |
-| `sf-t000467` | Beziehungslinien | **default-on** (T001931) |
-| `sf-t000469` | Boden-Notizen | **default-on** (T001931) |
-
-Die vier default-on-Flags werden in `public/index.html` per `Object.assign` geseedet;
-ein vorab gesetzter Wert (ConfigMap/URL) gewinnt weiterhin (Kill-Switch bleibt erhalten).
-
-### Replay aktivieren (dev)
-
-Setze das Flag (z. B. via `brett-features` ConfigMap oder im Browser):
-
-```json
-{
-  "replay": true
-}
-```
-
-Dann `?replay=1&room=<room-token>` im Browser aufrufen (als Admin — die
-`/api/sessions/*`-Endpunkte sind admin-gated). Der Server zeichnet alle
-Board-Mutations in der Tabelle `session_events` auf; der Client lädt sie per
-HTTP und rekonstruiert den Zustand lokal über `replay-engine.ts`.
+| Flag | Bedeutung | Stand |
+|------|-----------|-------|
+| `replay` | Zeitleiste/Wiedergabe einer Sitzung | aus |
+| `t000468-ground-anchors` | Boden-Anker und Flächen | an |
+| `sf-t000465` | Freiflug-Kamera | an |
+| `sf-t000467` | Beziehungslinien | an |
+| `sf-t000469` | Boden-Notizen | an |

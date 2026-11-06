@@ -128,7 +128,7 @@ export function makeMannequin(id?: string, position = { x: 0, z: 0 }, opts: any 
   headMesh.userData.klassisch = true;
 
   // Stilisiertes Gesicht (Gerald 16.10.2026: muss erkennbar sein, zeigt die
-  // Blickrichtung). Vorn = lokal +Z (Haltungen/Kniebeugung und Patricks
+  // Blickrichtung). Vorn = lokal +Z (Haltungen/Kniebeugung und die
   // Vorlagen setzen +Z voraus; Gerald: Augen saßen sonst am Hinterkopf). Nase immer sichtbar,
   // Augen werden durch ein gewähltes Gesichtsbild (Ausdruck) ersetzt.
   const faceGroup = new THREE.Group();

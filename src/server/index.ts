@@ -20,9 +20,10 @@ import * as undoStackModule from './undo-stack';
 import * as eventLog from './event-log';
 import * as shareTokens from './share-tokens';
 import { attachShareRoutes } from './share-routes';
-import { attachSkinsUpload } from './skins-upload';
 
 import { snapshotsRouter } from './routes/snapshots';
+import { klientenRouter } from './routes/klienten';
+import { regiebuecherRouter } from './routes/regiebuecher';
 import { authRouter } from './routes/auth';
 import { adminRouter } from './routes/admin';
 import { presetsRouter } from './routes/presets';
@@ -88,14 +89,14 @@ export { asyncHandler } from './helpers';
 app.use(authRouter);
 app.use(adminRouter);
 app.use(snapshotsRouter);
+app.use(klientenRouter);
+app.use(regiebuecherRouter);
 app.use(presetsRouter);
 app.use(boardTemplatesRouter);
 
 // T000608: View-only-Share-Link-Routen (/share/:token + Token-CRUD).
 attachShareRoutes(app, staticDir);
 
-// ─── Skins upload (3D asset-generation pipeline target) ───────────────────────
-attachSkinsUpload(app);
 
 // Generic error handler so we never leak stack traces.
 app.use((err: any, _req: any, res: any, _next: any) => {

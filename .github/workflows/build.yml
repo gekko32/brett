@@ -1,8 +1,7 @@
 name: Build Brett
 
 # Baut das Systembrett-Image ghcr.io/gekko32/brett (Gerald, 18.10.2026).
-# Vorlage: build-brett.yml aus Paddione/Bachelorprojekt. mentolder-prod prüft
-# alle 20 Minuten, ob es ein neues :latest gibt, und rollt es dann aus.
+# mentolder-prod prüft alle 20 Minuten, ob es ein neues :latest gibt, und rollt es dann aus.
 
 on:
   push:

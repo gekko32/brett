@@ -207,6 +207,8 @@ export function attachWsServer(wss: WebSocketServer, deps: WsDeps): void {
                 anchors: freshState.anchors ?? [],   // NEU T000468
                 zones: freshState.zones ?? [],       // NEU T000468
                 lines: freshState.lines ?? [],       // NEU T000467
+                // Regiebuch (06.11.2026): sichtbare Frage nach Neuladen wieder zeigen.
+                regiebuchFrage: freshState.regiebuchFrage ?? null,
               }));
             } catch {}
           }
@@ -347,9 +349,6 @@ export function attachWsServer(wss: WebSocketServer, deps: WsDeps): void {
           if (msg.type === 'admin_session_create') {
             // Any authenticated user may start a session and become its host.
             if (!ws._session?.userId) return;
-          } else if (msg.type === 'admin_broadcast') {
-            // Internal website notification — Keycloak-admin only.
-            if (!isKcAdmin) return;
           } else {
             // All other host actions: Keycloak-admin OR current room leiter.
             const roomRoles = deps.buildStateFromMutations(adminRoom)?.roles ?? {};

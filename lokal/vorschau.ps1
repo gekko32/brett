@@ -10,10 +10,6 @@ $ErrorActionPreference = 'Stop'
 $brett = Split-Path -Parent $PSScriptRoot
 $envDatei = Join-Path $PSScriptRoot '.env.lokal'
 if (-not (Test-Path $envDatei)) {
-    # Zugang liegt im alten Arbeitsordner (Bachelorprojekt), falls hier keiner liegt.
-    $envDatei = Join-Path $brett '..\Bachelorprojekt\components\brett\lokal\.env.lokal'
-}
-if (-not (Test-Path $envDatei)) {
     Write-Host "Fehlt: .env.lokal (Datenbank-Zugang). Claude fragen." -ForegroundColor Red
     exit 1
 }

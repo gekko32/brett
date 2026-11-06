@@ -16,7 +16,6 @@ export type ClientMessage =
   | { type: 'figure_unlock'; id: string }
   | { type: 'pong' }
   | { type: 'admin_kick'; playerId: string }
-  | { type: 'admin_broadcast'; message: string }
   | { type: 'admin_session_create' }
   | { type: 'admin_handoff_token'; targetPlayerId: string }
   | { type: 'admin_round_stop' }
@@ -51,7 +50,8 @@ export type ClientMessage =
 
 // ── Server → Client ──────────────────────────────────────────────
 export type ServerMessage =
-  | { type: 'snapshot'; figures: Figure[]; stiffness?: number; locks?: ServerLock[]; phase?: Phase; sessionCode?: string | null; optik?: OptikSettings; participants?: Participant[]; moderation?: { spotlight: string | null; dim: string | null; freeze: boolean }; anchors?: Anchor[]; zones?: Zone[]; lines?: BrettLine[] }
+  | { type: 'snapshot'; figures: Figure[]; stiffness?: number; locks?: ServerLock[]; phase?: Phase; sessionCode?: string | null; optik?: OptikSettings; participants?: Participant[]; moderation?: { spotlight: string | null; dim: string | null; freeze: boolean }; anchors?: Anchor[]; zones?: Zone[]; lines?: BrettLine[]; regiebuchFrage?: string | null }
+  | { type: 'regiebuch_frage'; text: string | null }
   | { type: 'add'; figure: Figure }
   | { type: 'move'; id: string; x: number; z: number; facingY: number }
   | { type: 'jump'; id: string }

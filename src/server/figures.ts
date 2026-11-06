@@ -231,6 +231,14 @@ export function applyMutation(room: string, msg: any): void {
       }
       break;
     }
+    case 'regiebuch_frage_set': {
+      // Regiebuch (06.11.2026): Frage, die der Klient auf dem Brett sieht.
+      // Leerer Text = ausblenden.
+      const text = typeof msg.text === 'string' ? msg.text.trim().slice(0, 1000) : '';
+      if (text) figs.set('__regiebuch_frage__', { id: '__regiebuch_frage__', text });
+      else figs.delete('__regiebuch_frage__');
+      break;
+    }
     case 'roles_set': {
       if (msg.roles && typeof msg.roles === 'object' && !Array.isArray(msg.roles)) {
         figs.set('__roles__', { id: '__roles__', roles: msg.roles });
@@ -346,6 +354,9 @@ export function seedFigureMapFromState(map: Map<string, any>, state: any): void 
   }
   if (state.coachingSteps) {
     map.set('__coaching_steps__', { id: '__coaching_steps__', ...state.coachingSteps });
+  }
+  if (typeof state.regiebuchFrage === 'string' && state.regiebuchFrage) {
+    map.set('__regiebuch_frage__', { id: '__regiebuch_frage__', text: state.regiebuchFrage });
   }
   if (state.sessionPhase) {
     map.set('__session_phase__', { id: '__session_phase__', phase: state.sessionPhase });

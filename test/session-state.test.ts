@@ -14,12 +14,12 @@ test('SPECIAL array excludes session sentinel keys from figures list', () => {
   const room = 'session-state-test-1';
   applyMutation(room, { type: 'session_phase_set', phase: 'warmup' });
   applyMutation(room, { type: 'session_code_set', code: 'KRB-9A2' });
-  applyMutation(room, { type: 'session_admin_token_set', playerId: 'paddione' });
+  applyMutation(room, { type: 'session_admin_token_set', playerId: 'leitung-a' });
   const state = buildStateFromMutations(room);
   assert.strictEqual(state.figures.length, 0, 'sentinels must not leak into figures');
   assert.strictEqual(state.sessionPhase, 'warmup');
   assert.strictEqual(state.sessionCode, 'KRB-9A2');
-  assert.strictEqual(state.adminTokenHolder, 'paddione');
+  assert.strictEqual(state.adminTokenHolder, 'leitung-a');
 });
 
 test('transitionPhase: warmup → active is allowed', () => {
@@ -67,13 +67,13 @@ test('transitionPhase: active ↔ paused round-trip preserves session', () => {
 
 test('admin_session_create: creates session with code + lobby phase + sets holder', () => {
   const room = 'session-create-test-1';
-  const result = handleAdminSessionCreate(room, 'paddione');
+  const result = handleAdminSessionCreate(room, 'leitung-a');
   assert.strictEqual(result.ok, true);
   assert.match(result.code!, /^[A-HJ-NP-Z2-9]{3}-[A-HJ-NP-Z2-9]{3}$/);
   const state = buildStateFromMutations(room);
   assert.strictEqual(state.sessionPhase, 'lobby');
   assert.strictEqual(state.sessionCode, result.code);
-  assert.strictEqual(state.adminTokenHolder, 'paddione');
+  assert.strictEqual(state.adminTokenHolder, 'leitung-a');
 });
 
 test('admin_round_stop: transitions phase to ended, broadcasts session_ended', () => {

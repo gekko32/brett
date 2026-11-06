@@ -246,30 +246,6 @@
     }
 
     /* ── Remaining panels (Phase E) ──────────────────────────────── */
-    /* Co-op Wave HUD */
-    .coop-hud {
-      display: none; position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
-      background: var(--slate-0, rgba(10,10,20,.82)); border: 1px solid var(--sage, #4a7);
-      border-radius: var(--radius-md, 8px); padding: 8px 20px;
-      font-family: var(--font-mono, monospace); color: var(--parchment-2, #b9bda3); font-size: 13px;
-      flex-direction: column; gap: 4px; min-width: 220px; z-index: 200;
-    }
-    .coop-hud-header { display: flex; justify-content: space-between; align-items: center; }
-    .coop-hud-label { color: var(--brass, #c8a96e); font-weight: bold; letter-spacing: .1em; }
-    .coop-wave-label { font-size: 15px; font-weight: bold; color: var(--parchment, #e7ead0); }
-    .coop-enemy-count { color: var(--parchment-3, #e87); }
-    .coop-progress {
-      background: var(--slate-2, #1e1e1e); border-radius: var(--radius-sm, 4px); overflow: hidden; height: 4px;
-    }
-    .coop-progress-bar {
-      height: 100%; background: linear-gradient(90deg, var(--sage, #4a7), var(--brass, #c9aa71)); transition: width .5s;
-    }
-    .boss-hp-wrap { display: none; margin-top: 4px; }
-    .boss-hp-label { color: var(--danger, #f44); font-size: 11px; margin-bottom: 2px; }
-    .boss-hp-track {
-      background: var(--slate-2, #1e1e1e); border-radius: var(--radius-sm, 4px); overflow: hidden; height: 6px;
-    }
-    .boss-hp-bar { width: 100%; height: 100%; background: var(--danger, #f44); transition: width .3s; }
 
     /* Session-created toast */
     .session-toast {
@@ -284,13 +260,6 @@
     .session-toast-link {
       color: var(--parchment-2, #58a6ff); text-decoration: none; display: inline-block; margin-top: 6px;
     }
-
-    /* Person button (persons.ts — static parts → class, data-driven border stays inline) */
-    .person-btn {
-      text-align: left; padding: 4px 7px; font-size: 11px;
-      display: flex; align-items: center; gap: 6px;
-    }
-    .person-btn img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
 
     /* Personenkatalog (catalog-panel.ts): Ebenen aufklappbar, Rollen als Knöpfe */
     #fig-panel-catalog { display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px; }
@@ -367,14 +336,9 @@
     #fig-panel #presets .preset-btn { font-size: 11px; padding: 4px 2px; }
     /* Rand-Reiter „Figur bearbeiten“ entfällt: Öffnen über ✎ am Schwebemenü. */
     #fig-panel-edge-tab { display: none !important; }
-    /* Ablaufanzeige (assets/coaching/hud.mjs, Inline-Stil top:12px) lag auf der
-       oberen Leiste und verdeckte Knöpfe → unter die Leiste. Teilnehmerkasten
-       oben rechts verdeckte die rechten Knöpfe; Teilnehmer gibt es über 👥. */
-    #coaching-hud { top: 44px !important; }
-    #coaching-participants { display: none !important; }
     /* Präsentationsansicht: solange das Steuerpult-Fenster offen ist, zeigt das
        Brett nur das Spielfeld (für Bildschirmteilen). */
-    body.praesentation > *:not(canvas) { display: none !important; }
+    body.praesentation > *:not(canvas):not(#regiebuch-frage) { display: none !important; }
     /* ☰ Menü (ui/menue.ts): Seltenes aus der Leiste, geordnet nach Abschnitten */
     #menue-btn { margin-left: auto; font-weight: 600; }
     #menue-panel {
@@ -397,7 +361,6 @@
     body.brett-menu-active #topbar,
     body.brett-menu-active #status-pill,
     body.brett-menu-active #appearance-drawer,
-    body.brett-menu-active #coop-hud { display: none !important; }
 
     /* ── T000606: Mobile-Touch-Steuerung ───────────────────────────── */
     canvas { touch-action: none; }
@@ -549,40 +512,13 @@
   </div>
   <div id="status-pill" data-i18n="hint.noSelection">Klick = Figur wählen</div>
 
-  <!-- Co-op Wave HUD -->
-  <div id="coop-hud" class="coop-hud">
-    <div class="coop-hud-header">
-      <span class="coop-hud-label">CO-OP</span>
-      <span id="coop-wave-label" class="coop-wave-label">WELLE 1 / 10</span>
-      <span id="coop-enemy-count" class="coop-enemy-count">Feinde: <strong>0</strong></span>
-    </div>
-    <div class="coop-progress">
-      <div id="coop-progress-bar" class="coop-progress-bar" style="width:10%;"></div>
-    </div>
-    <div id="boss-hp-wrap" class="boss-hp-wrap">
-      <div class="boss-hp-label">&#9888; BOSS HP</div>
-      <div class="boss-hp-track">
-        <div id="boss-hp-bar" class="boss-hp-bar"></div>
-      </div>
-    </div>
-  </div>
-
 <script type="module">
   import { createWire } from '/assets/coaching/wire.mjs';
-  import { mountCoachingHud } from '/assets/coaching/hud.mjs';
-  // Coaching runs unconditionally — mode concept removed.
-  const me = await fetch('/auth/me').then((r) => r.json()).catch(() => ({}));
+  // Nur noch die Meldung „Session erstellt“ (Patricks Ablaufleiste entfernt 06.11.2026).
   const wire = createWire(() => window.__brettWS);
   const tryAttach = () => { if (!wire.attach()) setTimeout(tryAttach, 150); };
   tryAttach();
 
-  const hasRoom = new URLSearchParams(location.search).has('room');
-  if (hasRoom) {
-    // Deep-link path: keep the existing coaching HUD.
-    mountCoachingHud({ wire, isAdmin: !!me.isAdmin });
-  }
-  // No-?room entry is now owned by the Phase-A Hauptmenü (src/client/main.ts);
-  // the legacy mountJoinOverlay({}) is intentionally NOT auto-mounted here.
 
   wire.on('session_created', (m) => {
     const toast = document.createElement('div');

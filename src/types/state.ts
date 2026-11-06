@@ -6,7 +6,7 @@ export type Phase = 'lobby' | 'warmup' | 'active' | 'paused' | 'ended';
 
 export type Role = 'leiter' | 'stellvertreter' | 'beobachter' | 'gast' | 'zuschauer';
 
-export type FigureType = 'coachee' | 'team_active' | 'team_passive' | 'saboteur' | 'resource';
+export type FigureType = 'coachee' | 'team_active' | 'team_passive' | 'resource';
 
 // ── Line types (Slice 4 / T000467) ──────────────────────────────────────────
 export type LineType = 'relationship' | 'tension' | 'resource';

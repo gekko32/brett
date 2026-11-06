@@ -9,16 +9,16 @@ import {
 } from '../src/server/index';
 
 test('trackPlayerInRoom + wasPreviouslyInRoom: roundtrip', () => {
-  trackPlayerInRoom('rc-room-1', 'paddione');
-  assert.strictEqual(wasPreviouslyInRoom('rc-room-1', 'paddione'), true);
+  trackPlayerInRoom('rc-room-1', 'leitung-a');
+  assert.strictEqual(wasPreviouslyInRoom('rc-room-1', 'leitung-a'), true);
   assert.strictEqual(wasPreviouslyInRoom('rc-room-1', 'gekko'), false);
 });
 
 test('shouldRejectReconnect: phase=active + previously joined → reject', () => {
   const room = 'rc-room-2';
   applyMutation(room, { type: 'session_phase_set', phase: 'active' });
-  trackPlayerInRoom(room, 'paddione');
-  const decision = shouldRejectReconnect(room, 'paddione');
+  trackPlayerInRoom(room, 'leitung-a');
+  const decision = shouldRejectReconnect(room, 'leitung-a');
   assert.strictEqual(decision.reject, true);
   assert.strictEqual(decision.code, 409);
   assert.match(decision.message!, /aktiver Runde/i);
@@ -27,8 +27,8 @@ test('shouldRejectReconnect: phase=active + previously joined → reject', () =>
 test('shouldRejectReconnect: phase=warmup → allow even with prior join', () => {
   const room = 'rc-room-3';
   applyMutation(room, { type: 'session_phase_set', phase: 'warmup' });
-  trackPlayerInRoom(room, 'paddione');
-  const decision = shouldRejectReconnect(room, 'paddione');
+  trackPlayerInRoom(room, 'leitung-a');
+  const decision = shouldRejectReconnect(room, 'leitung-a');
   assert.strictEqual(decision.reject, false);
 });
 
@@ -50,15 +50,15 @@ test('shouldRejectReconnect: phase=paused + first-time join → admit (late-join
 test('shouldRejectReconnect: phase=lobby → admit', () => {
   const room = 'rc-room-lobby';
   applyMutation(room, { type: 'session_phase_set', phase: 'lobby' });
-  trackPlayerInRoom(room, 'paddione');
-  const decision = shouldRejectReconnect(room, 'paddione');
+  trackPlayerInRoom(room, 'leitung-a');
+  const decision = shouldRejectReconnect(room, 'leitung-a');
   assert.strictEqual(decision.reject, false);
 });
 
 test('shouldRejectReconnect: phase=ended → reject (410)', () => {
   const room = 'rc-room-ended';
   applyMutation(room, { type: 'session_phase_set', phase: 'ended' });
-  const decision = shouldRejectReconnect(room, 'paddione');
+  const decision = shouldRejectReconnect(room, 'leitung-a');
   assert.strictEqual(decision.reject, true);
   assert.strictEqual(decision.code, 410);
 });

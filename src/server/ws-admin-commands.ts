@@ -5,6 +5,7 @@ import {
   handleAdminRoundStop,
   handleAdminRoundPause,
   handleAdminCoachingStepsSet,
+  handleAdminRegiebuchFrage,
   handleAdminRoundStart,
   handleSessionUndo,
   handleSessionRedo,
@@ -52,14 +53,6 @@ export async function handleAdminMessage(ws: any, msg: any, adminRoom: string, d
       }
       break;
     }
-    case 'admin_broadcast': {
-      const websiteUrl = process.env.WEBSITE_INTERNAL_URL || 'http://website.website.svc.cluster.local:4321';
-      fetch(`${websiteUrl}/api/admin/brett/broadcast`, {
-        method: 'POST',
-        headers: { 'x-internal-admin': process.env.BRETT_INTERNAL_ADMIN_SECRET || '' },
-      }).catch((err: any) => console.error('[brett] admin_broadcast failed:', err.message));
-      break;
-    }
     case 'admin_session_create':
       handleAdminSessionCreate(ws, msg, adminRoom, deps);
       break;
@@ -74,6 +67,9 @@ export async function handleAdminMessage(ws: any, msg: any, adminRoom: string, d
       break;
     case 'admin_coaching_steps_set':
       handleAdminCoachingStepsSet(ws, msg, adminRoom, deps);
+      break;
+    case 'admin_regiebuch_frage':
+      handleAdminRegiebuchFrage(ws, msg, adminRoom, deps);
       break;
     case 'admin_round_start':
       handleAdminRoundStart(ws, msg, adminRoom, deps);
