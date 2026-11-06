@@ -83,7 +83,6 @@ function routeClient(msg: ClientMessage): string {
     case 'figure_unlock': return 'figure_unlock';
     case 'pong': return 'pong';
     case 'admin_kick': return 'admin_kick';
-    case 'admin_broadcast': return 'admin_broadcast';
     case 'admin_session_create': return 'admin_session_create';
     case 'admin_handoff_token': return 'admin_handoff_token';
     case 'admin_round_stop': return 'admin_round_stop';

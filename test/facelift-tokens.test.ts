@@ -94,28 +94,3 @@ test('E5: remaining-panels region references expected tokens', () => {
   assert.ok(region.includes('var(--brass'),     'must reference --brass');
   assert.ok(region.includes('var(--parchment'), 'must reference --parchment');
 });
-
-// ── E5 guard: persons.ts has no structural hex in buildPersonsPanel ──────────
-
-test('E5: persons.ts buildPersonsPanel has no standalone structural hex in cssText', () => {
-  const src = readFileSync(
-    resolve(import.meta.dirname, '../src/client/ui/persons.ts'),
-    'utf8',
-  );
-  // Find buildPersonsPanel function body (between its opening brace and the next
-  // exported function or end of file).
-  const fnStart = src.indexOf('export function buildPersonsPanel');
-  assert.ok(fnStart >= 0, 'buildPersonsPanel not found in persons.ts');
-  // Slice up to initPersons (the next export after buildPersonsPanel)
-  const fnEnd = src.indexOf('\nexport', fnStart + 1);
-  const fnBody = fnEnd >= 0 ? src.slice(fnStart, fnEnd) : src.slice(fnStart);
-  // The only allowed hex is the data-driven ${p.color} interpolation — not a literal.
-  // Strip template literal ${…} expressions
-  const stripped = fnBody.replace(/\$\{[^}]+\}/g, 'DATA');
-  const hexMatch = stripped.match(/#[0-9a-fA-F]{3,8}(?![0-9a-fA-F])/);
-  assert.equal(
-    hexMatch,
-    null,
-    `buildPersonsPanel contains a structural hex literal: ${hexMatch?.[0]}`,
-  );
-});

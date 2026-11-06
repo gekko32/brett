@@ -8,6 +8,7 @@ import * as mannequin from './mannequin';
 import * as wsClient from './ws-client';
 import * as figPanel from './ui/fig-panel';
 import { initTouchHandler, type TouchDeps } from './touch-handler';
+import { moebelAn, starteMoebelZug, bewegeMoebelZug, beendeMoebelZug } from './moebel-3d';
 import * as snapping from './snapping';
 import type { ClientModerationState } from './ws-client';
 import { computeGrabOffset, applyGrabOffset, angleAround, rotateFacing, shouldSend } from './figure-drag';
@@ -65,6 +66,11 @@ export function initBoardTouchControls(deps: TouchControlsDeps): void {
     pickContactAt: (x, y) => mannequin.pickContact({ clientX: x, clientY: y }),
     pickRotateRingAt: (x, y) => mannequin.pickRotateRing({ clientX: x, clientY: y }),
     pickBodyAt: (x, y) => mannequin.pickMannequinBody({ clientX: x, clientY: y }),
+    // Möbel mit dem Finger verschieben (Gerald 06.11.2026, Tablet).
+    pickMoebelAt: moebelAn,
+    startMoebelDrag: starteMoebelZug,
+    moveMoebelDrag: bewegeMoebelZug,
+    endMoebelDrag: beendeMoebelZug,
     canDragFigure,
     startFigureDrag: (target, x, y) => {
       const figId = targetFigureId(target);

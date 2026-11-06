@@ -32,7 +32,7 @@ export function resolveOidcEnv(env: NodeJS.ProcessEnv = process.env): OidcEnv {
 
   // Single-label hostnames (no dot, e.g. "pocket-id") are same-namespace
   // Kubernetes service DNS — the base manifest uses them so both brand
-  // namespaces (workspace / workspace-korczewski) resolve their own Pocket-ID.
+  // namespaces resolve their own Pocket-ID.
   const isClusterHttp = internalUrl.protocol === 'http:' &&
     (internalUrl.hostname === 'localhost' || internalUrl.hostname === '127.0.0.1' ||
       internalUrl.hostname.endsWith('.svc.cluster.local') || !internalUrl.hostname.includes('.'));

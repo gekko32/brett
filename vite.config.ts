@@ -32,6 +32,7 @@ export default defineConfig({
         zuschauer: resolve(__dirname, 'public/zuschauer.html'),
         steuerpult: resolve(__dirname, 'public/steuerpult.html'),
         genogramm: resolve(__dirname, 'public/genogramm.html'),
+        vergleich: resolve(__dirname, 'public/vergleich.html'),
       },
     },
   },

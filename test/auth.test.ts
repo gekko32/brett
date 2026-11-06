@@ -25,7 +25,7 @@ test('isAdminFromClaims: true only when realm_access.roles includes "admin"', ()
 });
 
 test('resolveBrand: env override, else mentolder default', () => {
-  assert.equal(resolveBrand({ BRETT_BRAND: 'korczewski' } as any), 'korczewski');
+  assert.equal(resolveBrand({ BRETT_BRAND: 'andere-marke' } as any), 'andere-marke');
   assert.equal(resolveBrand({} as any), 'mentolder');
 });
 

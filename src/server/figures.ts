@@ -1,4 +1,5 @@
 import type { Anchor, BrettLine, OptikSettings, Zone } from '../types/state';
+import { normalisiereMoebel } from '../types/moebel';
 
 export const figureMaps = new Map<string, Map<string, any>>();
 export const figureLocks = new Map<string, Map<string, { userId: string; name: string; color: string }>>();
@@ -231,6 +232,21 @@ export function applyMutation(room: string, msg: any): void {
       }
       break;
     }
+    case 'moebel_set': {
+      // Möbel und Wände (06.11.2026): ganze Liste, serverseitig geprüft.
+      const liste = normalisiereMoebel(msg.moebel);
+      if (liste.length) figs.set('__moebel__', { id: '__moebel__', moebel: liste });
+      else figs.delete('__moebel__');
+      break;
+    }
+    case 'regiebuch_frage_set': {
+      // Regiebuch (06.11.2026): Frage, die der Klient auf dem Brett sieht.
+      // Leerer Text = ausblenden.
+      const text = typeof msg.text === 'string' ? msg.text.trim().slice(0, 1000) : '';
+      if (text) figs.set('__regiebuch_frage__', { id: '__regiebuch_frage__', text });
+      else figs.delete('__regiebuch_frage__');
+      break;
+    }
     case 'roles_set': {
       if (msg.roles && typeof msg.roles === 'object' && !Array.isArray(msg.roles)) {
         figs.set('__roles__', { id: '__roles__', roles: msg.roles });
@@ -347,6 +363,13 @@ export function seedFigureMapFromState(map: Map<string, any>, state: any): void 
   if (state.coachingSteps) {
     map.set('__coaching_steps__', { id: '__coaching_steps__', ...state.coachingSteps });
   }
+  if (Array.isArray(state.moebel) && state.moebel.length) {
+    const liste = normalisiereMoebel(state.moebel);
+    if (liste.length) map.set('__moebel__', { id: '__moebel__', moebel: liste });
+  }
+  if (typeof state.regiebuchFrage === 'string' && state.regiebuchFrage) {
+    map.set('__regiebuch_frage__', { id: '__regiebuch_frage__', text: state.regiebuchFrage });
+  }
   if (state.sessionPhase) {
     map.set('__session_phase__', { id: '__session_phase__', phase: state.sessionPhase });
   }
@@ -434,6 +457,8 @@ export function seedFiguresFromTemplate(room: string, templateState: any): void 
       if (z && typeof z === 'object') applyMutation(room, { type: 'zone_create', zone: z });
     }
   }
+  // Möbel (06.11.2026): Vorlage/gespeicherte Aufstellung bringt ihre eigenen mit.
+  applyMutation(room, { type: 'moebel_set', moebel: templateState?.moebel ?? [] });
   // Anchors (D4): same pattern via anchor_create, same clear-on-empty semantics.
   const anchors: Anchor[] | undefined = templateState?.anchors;
   figs.set('__anchors__', { id: '__anchors__', anchors: [] });
@@ -494,6 +519,7 @@ export function applyTemplateToRoom(room: string, templateState: any, broadcastF
     anchors: built.anchors ?? [],
     lines: built.lines ?? [],
     optik: built.optik ?? null,
+    moebel: built.moebel ?? [],
   });
 }
 

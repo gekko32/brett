@@ -7,5 +7,5 @@ test('resolveBrand defaults to mentolder', () => {
   assert.strictEqual(resolveBrand({}), 'mentolder');
 });
 test('resolveBrand reads BRETT_BRAND', () => {
-  assert.strictEqual(resolveBrand({ BRETT_BRAND: 'korczewski' }), 'korczewski');
+  assert.strictEqual(resolveBrand({ BRETT_BRAND: 'andere-marke' }), 'andere-marke');
 });

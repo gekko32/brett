@@ -18,6 +18,13 @@ import type { PultNachricht, KameraAktion, MenueAktion } from './steuerpult-sync
 import { baueNavKugel } from './ui/nav-kugel';
 import { naechsteHaltung } from './presets-logik';
 import { ebeneText, ebeneHinweis, rolleText, ereignisText, artText, bodenText } from './katalog-texte';
+import { klient, klientBlock, klientName, starteKlient, aufstellungenUrl } from './pult-klient';
+import { rb, regiebuchBlock, ladeRegiebuecher } from './pult-regiebuch';
+import { moebelZustand, moebelBlock } from './pult-moebel';
+import { sitzplaetze, istBesetzt } from '../types/moebel';
+
+/** Zuletzt geladene gespeicherte Aufstellung: neue Speicherungen vermerken sie als Herkunft. */
+let geladenVon: string | null = null;
 
 type Fig = {
   id: string; x: number; z: number; facingY?: number; label?: string; color?: string;
@@ -53,7 +60,7 @@ let reiter: Reiter = 'allgemein';
 
 const FARBEN = ['#4f7cac', '#c0607a', '#8a7fa8', '#6fb38a', '#e0b04a', '#b05a3c', '#6b6f78', '#b8c0a8'];
 const HALTUNGEN: Array<[string, string]> = [
-  ['stand', 'pose.stand'], ['kneel', 'pose.kneel'], ['prone', 'pose.prone'],
+  ['stand', 'pose.stand'], ['sit', 'pose.sit'], ['kneel', 'pose.kneel'], ['prone', 'pose.prone'],
   ['crawl', 'pose.crawl'], ['slump', 'pose.slump'], ['tpose', 'pose.tpose'], ['armsForward', 'pose.armsForward'],
 ];
 
@@ -125,6 +132,10 @@ function empfangen(m: any): void {
       if (m.optik) optik = { ...optik, ...m.optik };
       linien.clear();
       for (const l of m.lines || []) linien.set(l.id, { ...l });
+      if ('moebel' in m) moebelZustand.liste = Array.isArray(m.moebel) ? m.moebel : [];
+      break;
+    case 'moebel_changed':
+      moebelZustand.liste = Array.isArray(m.moebel) ? m.moebel : [];
       break;
     case 'line_created':
       if (m.line?.id) linien.set(m.line.id, { ...m.line });
@@ -218,11 +229,33 @@ function setStatus(text: string): void {
   if (s) s.textContent = text;
 }
 
-const offen: Record<string, boolean> = { sitzung: true, ansicht: false, personen: true, katalog: false, figur: true, angaben: false, beziehungen: true };
+const offen: Record<string, boolean> = { klient: true, sitzung: true, regiebuch: true, moebel: true, ansicht: false, personen: true, katalog: false, figur: true, angaben: false, beziehungen: true };
 function block(key: string, titel: string, ...inhalt: Node[]): HTMLDetailsElement {
   const d = h('details', { class: 'block', open: offen[key] }, h('summary', {}, titel), ...inhalt);
   d.addEventListener('toggle', () => { offen[key] = d.open; });
   return d;
+}
+
+/**
+ * Aktuellen Stand als Aufstellung speichern (Knopf „Speichern“ und
+ * Speicherpunkte im Regiebuch). Gehört zum Klienten der Sitzung, vermerkt die
+ * Herkunft und nimmt die Sitzungsnotiz aus dem Regiebuch mit.
+ */
+async function speichereAufstellung(titel: string): Promise<boolean> {
+  try {
+    // Grundlage: gespeicherter Raumzustand (Zonen, Marken …), darüber der Live-Stand.
+    const basis = await fetch('/api/state?room=' + encodeURIComponent(room)).then(r => r.ok ? r.json() : {}).catch(() => ({}));
+    const state: any = { ...basis, figures: [...figuren.values()], lines: [...linien.values()], optik };
+    delete state.regiebuchFrage;
+    if (rb.notiz.trim()) state.sitzungsnotiz = rb.notiz.trim();
+    state.moebel = moebelZustand.liste;
+    const r = await fetch('/api/snapshots', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: titel.slice(0, 200), room_token: room, state,
+        customer_id: klient.aktuell?.id ?? null, kopie_von: geladenVon }),
+    });
+    return r.ok;
+  } catch { return false; }
 }
 
 function sitzungBlock(): HTMLElement {
@@ -254,28 +287,24 @@ function sitzungBlock(): HTMLElement {
     const titel = name.value.trim();
     if (!titel) return;
     speichern.disabled = true;
-    try {
-      // Grundlage: gespeicherter Raumzustand (Zonen, Marken …), darüber der Live-Stand.
-      const basis = await fetch('/api/state?room=' + encodeURIComponent(room)).then(r => r.ok ? r.json() : {}).catch(() => ({}));
-      const state = { ...basis, figures: [...figuren.values()], lines: [...linien.values()], optik };
-      const r = await fetch('/api/snapshots', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: titel, room_token: room, state }),
-      });
-      meldung.textContent = r.ok ? '✓ ' + t('pult.saved') : '⚠ ' + t('pult.saveFailed');
-      if (r.ok) ladeListe();
-    } catch { meldung.textContent = '⚠ ' + t('pult.saveFailed'); }
+    const ok = await speichereAufstellung(titel);
+    meldung.textContent = ok ? '✓ ' + t('pult.saved') : '⚠ ' + t('pult.saveFailed');
+    if (ok) ladeListe();
     speichern.disabled = false;
   }, 'primaer');
 
   const liste = h('select', {}, h('option', { value: '' }, t('pult.savedChoose')));
-  const ladeListe = () => {
-    fetch('/api/snapshots?gespeichert=true').then(r => r.ok ? r.json() : []).then((rows: any[]) => {
+  const namen = new Map<string, string>();
+  const ladeListe = (waehle?: string) => {
+    fetch(aufstellungenUrl(), { cache: 'no-store' }).then(r => r.ok ? r.json() : []).then((rows: any[]) => {
       liste.innerHTML = '';
+      namen.clear();
       liste.append(h('option', { value: '' }, rows.length ? t('pult.savedChoose') : t('pult.noSaved')));
       for (const row of rows) {
         const d = new Date(row.created_at);
-        liste.append(h('option', { value: row.id }, row.name + ' (' + d.toLocaleDateString('de-DE') + ')'));
+        namen.set(row.id, row.name);
+        liste.append(h('option', { value: row.id, selected: row.id === waehle },
+          (row.kopie_von ? '↳ ' : '') + row.name + ' (' + d.toLocaleDateString('de-DE') + ')'));
       }
     }).catch(() => { /* leer lassen */ });
   };
@@ -286,14 +315,60 @@ function sitzungBlock(): HTMLElement {
     if (!ladenBereit) { ladenBereit = true; oeffnen.textContent = t('session.templateConfirm'); oeffnen.classList.add('warn'); return; }
     // admin_set_template lädt einen gespeicherten Stand (brett_snapshots) in den Raum.
     senden({ type: 'admin_set_template', templateId: liste.value });
+    geladenVon = liste.value;
+    meldung.textContent = '✓ ' + t('pult.loadedFrom').replace('{name}', namen.get(liste.value) || '');
     ladenBereit = false; oeffnen.textContent = t('session.templateLoad'); oeffnen.classList.remove('warn');
   });
-  liste.addEventListener('change', () => { ladenBereit = false; oeffnen.textContent = t('session.templateLoad'); oeffnen.classList.remove('warn'); });
+  liste.addEventListener('change', () => {
+    ladenBereit = false; oeffnen.textContent = t('session.templateLoad'); oeffnen.classList.remove('warn');
+    loeschBereit = false; loeschen.textContent = '🗑 ' + t('pult.deleteSaved'); loeschen.classList.remove('warn');
+  });
+
+  // Kopie anlegen (Baustein 3): z. B. zweimal von derselben Ausgangslage für zwei Zukünfte.
+  const kopie = knopf('⧉ ' + t('pult.copySaved'), async () => {
+    if (!liste.value) return;
+    try {
+      const r = await fetch('/api/snapshots/' + liste.value + '/kopie', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      if (!r.ok) throw new Error();
+      const neu = await r.json();
+      meldung.textContent = '✓ ' + t('pult.copied').replace('{name}', neu.name);
+      ladeListe(neu.id);
+    } catch { meldung.textContent = '⚠ ' + t('pult.saveFailed'); }
+  });
+  // Löschen (Baustein 2), zweiter Klick bestätigt.
+  let loeschBereit = false;
+  const loeschen = knopf('🗑 ' + t('pult.deleteSaved'), async () => {
+    if (!liste.value) return;
+    if (!loeschBereit) { loeschBereit = true; loeschen.textContent = t('pult.deleteConfirm'); loeschen.classList.add('warn'); return; }
+    loeschBereit = false; loeschen.textContent = '🗑 ' + t('pult.deleteSaved'); loeschen.classList.remove('warn');
+    try {
+      const r = await fetch('/api/snapshots/' + liste.value, { method: 'DELETE' });
+      if (!r.ok) throw new Error();
+      if (geladenVon === liste.value) geladenVon = null;
+      meldung.textContent = '✓ ' + t('pult.deleted');
+      ladeListe();
+    } catch { meldung.textContent = '⚠ ' + t('kl.failed'); }
+  });
+  // Vergleichen (Baustein 4): eigenes Fenster, zwei Aufstellungen nebeneinander.
+  const vergleichen = knopf('⇆ ' + t('pult.compare'), () => {
+    const q = new URLSearchParams();
+    if (klient.aktuell) q.set('klient', klient.aktuell.id);
+    if (liste.value) q.set('a', liste.value);
+    const w = window.open('/vergleich.html?' + q.toString(), 'brett-vergleich-' + room, 'popup,width=1200,height=760');
+    w?.focus();
+  });
+
+  const fuer = klient.aktuell
+    ? h('div', { class: 'klein' }, t('pult.savedFor').replace('{name}', klientName(klient.aktuell)))
+    : h('div', { class: 'klein' }, t('pult.savedNoClient'));
 
   return block('sitzung', t('session.button'),
+    fuer,
     h('label', { class: 'feld' }, t('pult.saveTitle'), h('div', { class: 'reihe', style: { flexWrap: 'nowrap' } }, name, speichern)),
     meldung,
     h('label', { class: 'feld' }, t('pult.savedList'), h('div', { class: 'reihe', style: { flexWrap: 'nowrap' } }, liste, oeffnen)),
+    h('div', { class: 'reihe', style: { marginTop: '4px' } }, kopie, vergleichen, loeschen),
     h('hr', { style: { border: '0', borderTop: '1px solid var(--line)', margin: '8px 0' } }),
     h('label', { class: 'feld' }, t('session.template'), h('div', { class: 'reihe', style: { flexWrap: 'nowrap' } }, tpl, laden)),
     h('div', { class: 'klein' }, t('session.templateHint')),
@@ -484,6 +559,23 @@ function figurBlock(): HTMLElement | null {
   const haltung = h('div', { class: 'raster3' }, ...HALTUNGEN.map(([p, k]) =>
     knopf(t(k), () => { aendern(id, { preset: naechsteHaltung(f.preset, p), boneOverrides: {} }); zeichnen(); }, f.preset === p ? 'aktiv' : '')));
 
+  // Sitzen (06.11.2026): Figur auf einen Stuhl, Sessel oder eine Bank setzen.
+  const plaetze = sitzplaetze(moebelZustand.liste);
+  const alleFig = [...figuren.values()].map(x => ({ id: x.id, x: x.x, z: x.z }));
+  const sitzWahl = h('select', {},
+    h('option', { value: '' }, plaetze.length ? 'Setzen auf …' : 'Keine Sitzmöbel auf dem Brett'),
+    ...plaetze.map((p, i) => h('option', { value: String(i), disabled: istBesetzt(p, alleFig, id) },
+      p.name + (istBesetzt(p, alleFig, id) ? ' (besetzt)' : '')))) as HTMLSelectElement;
+  sitzWahl.disabled = !plaetze.length;
+  sitzWahl.addEventListener('change', () => {
+    const p = plaetze[Number(sitzWahl.value)];
+    if (!p) return;
+    figuren.set(id, { ...figuren.get(id)!, x: p.x, z: p.z, facingY: p.facingY });
+    senden({ type: 'move', id, x: p.x, z: p.z, facingY: p.facingY });
+    aendern(id, { preset: 'sit', boneOverrides: {} });
+    zeichnen(true);
+  });
+
   const farben = h('div', { class: 'farben' }, ...FARBEN.map(c =>
     h('button', { type: 'button', class: 'farbe' + (f.color === c ? ' aktiv' : ''), style: { background: c }, title: c,
       onclick: () => { aendern(id, { color: c }); zeichnen(); } })));
@@ -613,6 +705,7 @@ function figurBlock(): HTMLElement | null {
     h('label', { class: 'feld' }, t('fig.noteLong'), notiz),
     h('label', { class: 'feld' }, t('pult.rotate'), drehReihe),
     h('label', { class: 'feld' }, t('pose.label'), haltung),
+    h('label', { class: 'feld' }, 'Sitzplatz', sitzWahl),
     h('label', { class: 'feld' }, t('pult.color'), farben),
     h('label', { class: 'feld' }, t('pult.size'), groessen),
     h('div', { class: 'reihe', style: { marginTop: '8px' } }, loeschen));
@@ -644,12 +737,18 @@ function zeichnen(erzwingen = false): void {
     return;
   }
   main.innerHTML = '';
+  const k = klientBlock({ h, knopf, block, neuZeichnen: () => zeichnen(true) }); k.dataset.block = 'klient';
+  main.append(k);
   const s = sitzungBlock(); s.dataset.block = 'sitzung';
+  const r = regiebuchBlock({ h, knopf, block, neuZeichnen: () => zeichnen(true) },
+    { room, senden, speichereStand: speichereAufstellung }); r.dataset.block = 'regiebuch';
+  const mb = moebelBlock({ h, knopf, block, neuZeichnen: () => zeichnen(true) },
+    { senden, belegtePlaetze: () => [...figuren.values()].map(x => ({ x: x.x, z: x.z })) }); mb.dataset.block = 'moebel';
   const a = ansichtBlock(); a.dataset.block = 'ansicht';
   const sp = speichernBlock(); sp.dataset.block = 'teilen';
   const p = personenBlock(); p.dataset.block = 'personen';
   const f = figurBlock();
-  main.append(s, a, sp, p);
+  main.append(s, r, mb, a, sp, p);
   if (f) { f.dataset.block = 'figur'; main.append(f); }
   else main.append(h('div', { class: 'klein', style: { padding: '0 4px' } }, t('pult.selectHint')));
 }
@@ -781,6 +880,8 @@ function start(): void {
   }
   zeichnen(true);
   verbinden();
+  void starteKlient(room, () => zeichnen(true));
+  void ladeRegiebuecher(room, () => zeichnen(true));
 }
 
 start();

@@ -16,7 +16,6 @@ import * as figPanel from './ui/fig-panel';
 import * as hud from './ui/hud';
 import * as appearance from './ui/appearance';
 import * as appearanceBadge from './ui/appearance-badge';
-import * as persons from './ui/persons';
 import { initCatalogPanel } from './ui/catalog-panel';
 import { initPersonDetails } from './ui/person-details';
 import { initSessionPanel } from './ui/session-panel';
@@ -29,6 +28,7 @@ import * as exportUi from './ui/export';
 import * as importUi from './ui/import';
 import * as groundObjects from './ground-objects';
 import { initZoneEditing } from './ui/zone-editor';
+import { initMoebelVerschieben } from './moebel-3d';
 import * as cameraModes from './camera-modes';
 import * as viewCone from './view-cone';
 import * as snapping from './snapping';
@@ -116,7 +116,6 @@ export async function bootBoard(): Promise<void> {
   // ── UI init ────────────────────────────────────────────────────────
   figPanel.initFigPanel();
   appearance.initAppearance();
-  persons.initPersons();
   initCatalogPanel();
   initPersonDetails();
   initSessionPanel();
@@ -211,6 +210,9 @@ export async function bootBoard(): Promise<void> {
     // E1: Zonen-Editor (Drag verschieben + Doppelklick-Edit-Popover).
     initZoneEditing({ renderer, raycaster, mannequin, floor: sceneApi.floor });
   }
+
+  // Möbel und Wände (06.11.2026): zeichnen + mit der Maus verschieben (Leitung).
+  initMoebelVerschieben({ renderer, raycaster, mannequin, floor: sceneApi.floor });
 
   // ── T000606: Touch / Pointer-Events handler ────────────────────────────────
   initBoardTouchControls({

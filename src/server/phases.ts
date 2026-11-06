@@ -47,6 +47,8 @@ export function buildStateFromMutations(room: string): any {
     '__moderation__',   // ← T000471
     '__anchors__', '__zones__',   // NEU T000468
     '__lines__',  // ← NEU T000467
+    '__regiebuch_frage__',  // Regiebuch 06.11.2026
+    '__moebel__',           // Möbel und Wände 06.11.2026
   ];
   const figures = Array.from(figs.values()).filter(f => !SPECIAL.includes(f.id));
   const optikEntry        = figs.get('__optik__');
@@ -82,6 +84,9 @@ export function buildStateFromMutations(room: string): any {
   const zonesEntry   = figs.get('__zones__');
   result.anchors = anchorsEntry?.anchors ?? [];
   result.zones   = zonesEntry?.zones   ?? [];
+  const frageEntry = figs.get('__regiebuch_frage__');
+  if (frageEntry?.text) result.regiebuchFrage = frageEntry.text;
+  result.moebel = figs.get('__moebel__')?.moebel ?? [];
   const linesEntry = figs.get('__lines__');
   if (linesEntry?.lines) result.lines = Object.values(linesEntry.lines) as BrettLine[];
   return result;

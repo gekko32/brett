@@ -75,6 +75,14 @@ export function handleAdminCoachingStepsSet(_ws: any, msg: any, room: string, de
   deps.schedulePersist(room);
 }
 
+/** Regiebuch (06.11.2026): Frage auf dem Brett zeigen ({text}) oder ausblenden ({text: null}). */
+export function handleAdminRegiebuchFrage(_ws: any, msg: any, room: string, deps: WsDeps): void {
+  const text = typeof msg.text === 'string' ? msg.text.trim().slice(0, 1000) : '';
+  deps.applyMutation(room, { type: 'regiebuch_frage_set', text });
+  deps.broadcast(room, { type: 'regiebuch_frage', text: text || null });
+  deps.schedulePersist(room);
+}
+
 export function handleAdminRoundStart(_ws: any, _msg: any, room: string, deps: WsDeps): void {
   const res = deps.handleAdminRoundStart(room, (m: any) => deps.broadcast(room, m));
   if (res && res.ok && !res.noop) deps.schedulePersist(room);
@@ -135,4 +143,12 @@ export function handleSessionRedo(ws: any, _msg: any, room: string, deps: WsDeps
       ws.send(JSON.stringify({ type: 'error', reason: 'redo-stack-empty' }));
     } catch {}
   }
+}
+
+/** Möbel und Wände (06.11.2026): ganze Liste setzen, an alle verteilen. */
+export function handleAdminMoebelSet(_ws: any, msg: any, room: string, deps: WsDeps): void {
+  deps.applyMutation(room, { type: 'moebel_set', moebel: msg.moebel });
+  const moebel = deps.buildStateFromMutations(room)?.moebel ?? [];
+  deps.broadcast(room, { type: 'moebel_changed', moebel });
+  deps.schedulePersist(room);
 }

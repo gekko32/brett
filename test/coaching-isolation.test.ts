@@ -53,13 +53,6 @@ test('index.html does not contain gait, walking, or WASD movement tokens', () =>
   }
 });
 
-// NOTE (T000505): The 3D asset-generation pipeline legitimately introduces a
-// single, validated POST /api/skins/upload endpoint (brett/src/server/skins-upload.ts)
-// as the storage sink for Mixamo-rigged GLBs produced by the website pipeline.
-// That sanctioned endpoint uses the names attachSkinsUpload / validateGlbSize /
-// glbHasMixamoBones / SKINS_ROOT. This guard therefore only forbids the tokens
-// unique to the *rejected* earlier skins implementation (a separate listing/
-// slugify/SKINS_DIR design that must not return).
 test('server source does not contain the rejected custom-skins-listing tokens', () => {
   const rejectedTokens = [
     'SKINS_DIR',
@@ -74,20 +67,22 @@ test('server source does not contain the rejected custom-skins-listing tokens', 
   }
 });
 
-test('index.html loads the coaching HUD bootstrap module', () => {
-  const html = readFileSync(join(__dir, '../public/index.html'), 'utf8');
-  assert.ok(
-    html.includes("import { mountCoachingHud }") || html.includes("coaching/hud.mjs"),
-    'coaching HUD module must be imported in index.html'
-  );
-});
-
-test('named persons are brand-tagged so mentolder can hide them', () => {
-  // Gerald 18.10.2026: Fotos/Personen entfernt – eine leere Liste erfüllt die Absicht ebenso.
-  assert.ok(clientSrc.includes("brand: 'korczewski'") || /NAMED_PERSONS[^=]*=\s*\[\]/.test(clientSrc),
-    'NAMED_PERSONS entries must carry a brand tag (or the list is empty)');
-});
 
 test('add message carries the figure label', () => {
   assert.ok(/type:\s*['"]add['"][\s\S]{0,400}label/.test(clientSrc), 'add payload should include label');
+});
+
+// Gerald 06.11.2026: Patricks Ablaufleiste („Phase: Aufstellen (1/4)“) und der
+// Spielmodus (CO-OP/WELLE/BOSS) sind entfernt und dürfen nicht zurückkommen.
+test('Spielfeld ohne Patricks Ablaufleiste und Spielmodus', () => {
+  const html = readFileSync(join(__dir, '../public/index.html'), 'utf8');
+  for (const t of ['mountCoachingHud', 'coaching/hud.mjs', 'coop-hud', 'boss-hp']) {
+    assert.ok(!html.includes(t), `index.html enthält noch "${t}"`);
+  }
+});
+
+test('keine Anbindung an Patricks Website-Funktionen (Rundmeldung, 3D-Upload)', () => {
+  for (const t of ['admin_broadcast', 'WEBSITE_INTERNAL_URL', 'BRETT_INTERNAL_ADMIN_SECRET', 'attachSkinsUpload']) {
+    assert.ok(!serverSrcAll.includes(t), `Server enthält noch "${t}"`);
+  }
 });

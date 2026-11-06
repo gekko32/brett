@@ -50,6 +50,18 @@ export const PRESETS: Record<string, Record<string, { x: number; z: number }>> =
     lKnee:{x: 1.3,z:0}, rKnee:{x: 1.3,z:0},
     lAnkle:{x:0,z:0}, rAnkle:{x:0,z:0},
   },
+  // Sitzen (Gerald 06.11.2026): Oberschenkel waagrecht nach vorn, Unterschenkel
+  // senkrecht, Hände im Schoß. Die Bodenhaftung senkt die Hüfte auf ≈ 0,45 –
+  // Sitzhöhe von Stuhl, Sessel und Bank (types/moebel.ts).
+  sit: {
+    hips:{x:0,z:0}, head:{x:0,z:0},
+    lShoulder:{x:-0.25,z: 0.06}, rShoulder:{x:-0.25,z:-0.06},
+    lElbow:{x:-0.9,z:0}, rElbow:{x:-0.9,z:0},
+    lWrist:{x:0,z:0}, rWrist:{x:0,z:0},
+    lHip:{x:-1.5708,z:0.04}, rHip:{x:-1.5708,z:-0.04},
+    lKnee:{x: 1.5708,z:0}, rKnee:{x: 1.5708,z:0},
+    lAnkle:{x:0,z:0}, rAnkle:{x:0,z:0},
+  },
   // Beide Arme waagrecht nach vorn (Gerald 16.10.2026). Vorn = +Z.
   armsForward: {
     hips:{x:0,z:0}, head:{x:0,z:0},

@@ -121,8 +121,8 @@ test('D canMutate: leiter may figure_release', () => {
 test('D: figure_type_set writes figureType', () => {
   const room = 'ftype-1';
   applyMutation(room, { type: 'add', figure: { id: 'f1', x: 0, z: 0, facingY: 0, appearance: APPEARANCE } });
-  applyMutation(room, { type: 'figure_type_set', figureId: 'f1', figureType: 'saboteur' });
-  assert.strictEqual(figureById(room, 'f1').figureType, 'saboteur');
+  applyMutation(room, { type: 'figure_type_set', figureId: 'f1', figureType: 'resource' });
+  assert.strictEqual(figureById(room, 'f1').figureType, 'resource');
 });
 
 test('D: figure_type_set on non-existent figure is a no-op', () => {

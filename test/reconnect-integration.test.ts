@@ -38,7 +38,7 @@ function waitOpen(ws: WebSocket): Promise<void> {
 
 test('SEC-1/REG-3: a live join during an active session arms the 409 reconnect guard', async () => {
   const room = 'reconnect-int-room';
-  const playerId = 'paddione-int';
+  const playerId = 'leitung-a-int';
 
   // Seed an ACTIVE session so the join handler tracks presence + the guard is armed.
   registerSessionCode('RCI-001', room);

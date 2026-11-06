@@ -227,7 +227,7 @@ export function shouldRejectReconnect(room: string, playerId: string | null): { 
   if (phase === 'active' || phase === 'paused') {
     // Coaching (Gerald 16.10.2026): Neuladen während der Sitzung muss möglich
     // sein, sonst ist Leiter oder Klient nach F5 ausgesperrt (409). Abschaltbar
-    // per BRETT_RECONNECT_GUARD=off; Standard bleibt Patricks Schutz (SEC-1).
+    // per BRETT_RECONNECT_GUARD=off; Standard bleibt der Reconnect-Schutz (SEC-1).
     if (process.env.BRETT_RECONNECT_GUARD === 'off') return { reject: false };
     // Real late-joiner (never tracked in this room) → admit. A null/unknown
     // playerId is never previously-in-room, so it admits too (matrix-safe).
