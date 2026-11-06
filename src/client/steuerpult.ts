@@ -21,6 +21,7 @@ import { ebeneText, ebeneHinweis, rolleText, ereignisText, artText, bodenText } 
 import { klient, klientBlock, klientName, starteKlient, aufstellungenUrl } from './pult-klient';
 import { rb, regiebuchBlock, ladeRegiebuecher } from './pult-regiebuch';
 import { moebelZustand, moebelBlock } from './pult-moebel';
+import { sitzplaetze, istBesetzt } from '../types/moebel';
 
 /** Zuletzt geladene gespeicherte Aufstellung: neue Speicherungen vermerken sie als Herkunft. */
 let geladenVon: string | null = null;
@@ -59,7 +60,7 @@ let reiter: Reiter = 'allgemein';
 
 const FARBEN = ['#4f7cac', '#c0607a', '#8a7fa8', '#6fb38a', '#e0b04a', '#b05a3c', '#6b6f78', '#b8c0a8'];
 const HALTUNGEN: Array<[string, string]> = [
-  ['stand', 'pose.stand'], ['kneel', 'pose.kneel'], ['prone', 'pose.prone'],
+  ['stand', 'pose.stand'], ['sit', 'pose.sit'], ['kneel', 'pose.kneel'], ['prone', 'pose.prone'],
   ['crawl', 'pose.crawl'], ['slump', 'pose.slump'], ['tpose', 'pose.tpose'], ['armsForward', 'pose.armsForward'],
 ];
 
@@ -558,6 +559,23 @@ function figurBlock(): HTMLElement | null {
   const haltung = h('div', { class: 'raster3' }, ...HALTUNGEN.map(([p, k]) =>
     knopf(t(k), () => { aendern(id, { preset: naechsteHaltung(f.preset, p), boneOverrides: {} }); zeichnen(); }, f.preset === p ? 'aktiv' : '')));
 
+  // Sitzen (06.11.2026): Figur auf einen Stuhl, Sessel oder eine Bank setzen.
+  const plaetze = sitzplaetze(moebelZustand.liste);
+  const alleFig = [...figuren.values()].map(x => ({ id: x.id, x: x.x, z: x.z }));
+  const sitzWahl = h('select', {},
+    h('option', { value: '' }, plaetze.length ? 'Setzen auf …' : 'Keine Sitzmöbel auf dem Brett'),
+    ...plaetze.map((p, i) => h('option', { value: String(i), disabled: istBesetzt(p, alleFig, id) },
+      p.name + (istBesetzt(p, alleFig, id) ? ' (besetzt)' : '')))) as HTMLSelectElement;
+  sitzWahl.disabled = !plaetze.length;
+  sitzWahl.addEventListener('change', () => {
+    const p = plaetze[Number(sitzWahl.value)];
+    if (!p) return;
+    figuren.set(id, { ...figuren.get(id)!, x: p.x, z: p.z, facingY: p.facingY });
+    senden({ type: 'move', id, x: p.x, z: p.z, facingY: p.facingY });
+    aendern(id, { preset: 'sit', boneOverrides: {} });
+    zeichnen(true);
+  });
+
   const farben = h('div', { class: 'farben' }, ...FARBEN.map(c =>
     h('button', { type: 'button', class: 'farbe' + (f.color === c ? ' aktiv' : ''), style: { background: c }, title: c,
       onclick: () => { aendern(id, { color: c }); zeichnen(); } })));
@@ -687,6 +705,7 @@ function figurBlock(): HTMLElement | null {
     h('label', { class: 'feld' }, t('fig.noteLong'), notiz),
     h('label', { class: 'feld' }, t('pult.rotate'), drehReihe),
     h('label', { class: 'feld' }, t('pose.label'), haltung),
+    h('label', { class: 'feld' }, 'Sitzplatz', sitzWahl),
     h('label', { class: 'feld' }, t('pult.color'), farben),
     h('label', { class: 'feld' }, t('pult.size'), groessen),
     h('div', { class: 'reihe', style: { marginTop: '8px' } }, loeschen));

@@ -116,3 +116,40 @@ export function stuehleUmTisch(tisch: Moebel, anzahl: number, neueId: () => stri
   }
   return aus;
 }
+
+// ── Sitzen (Gerald 06.11.2026) ───────────────────────────────────────────────
+
+export interface Sitzplatz { moebelId: string; platz: number; name: string; x: number; z: number; facingY: number }
+
+/** Wie weit die Hüfte hinter der Möbelmitte liegt (Oberschenkel ragen 0,42 nach vorn). */
+const SITZ_ZURUECK: Partial<Record<MoebelArt, number>> = { stuhl: 0.15, sessel: 0.12, bank: 0.12 };
+const BANK_ABSTAND = 0.65;
+
+/** Alle Sitzplätze (Stuhl und Sessel je einer, Bank je nach Länge mehrere). */
+export function sitzplaetze(liste: Moebel[]): Sitzplatz[] {
+  const aus: Sitzplatz[] = [];
+  const zaehler: Record<string, number> = {};
+  for (const m of liste) {
+    const zurueck = SITZ_ZURUECK[m.art];
+    if (zurueck === undefined) continue;
+    zaehler[m.art] = (zaehler[m.art] ?? 0) + 1;
+    const basis = `${MOEBEL_ARTEN[m.art].name} ${zaehler[m.art]}`;
+    const anzahl = m.art === 'bank' ? Math.max(1, Math.floor(grundriss(m).breite / BANK_ABSTAND)) : 1;
+    for (let i = 0; i < anzahl; i++) {
+      const lx = m.art === 'bank' ? (i - (anzahl - 1) / 2) * BANK_ABSTAND : 0;
+      const lz = -zurueck;
+      const c = Math.cos(m.facingY), s = Math.sin(m.facingY);
+      aus.push({
+        moebelId: m.id, platz: i,
+        name: anzahl > 1 ? `${basis}, Platz ${i + 1}` : basis,
+        x: rund(m.x + lx * c + lz * s), z: rund(m.z - lx * s + lz * c), facingY: m.facingY,
+      });
+    }
+  }
+  return aus;
+}
+
+/** Ist der Platz schon von einer Figur belegt (Abstand < 0,3)? */
+export function istBesetzt(p: Pick<Sitzplatz, 'x' | 'z'>, figuren: Array<{ id: string; x: number; z: number }>, ausser?: string): boolean {
+  return figuren.some(f => f.id !== ausser && Math.hypot(f.x - p.x, f.z - p.z) < 0.3);
+}

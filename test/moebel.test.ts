@@ -78,3 +78,83 @@ test('M6 Vergleich zeichnet Möbel mit echten Maßen', () => {
   assert.equal(p.moebel.length, 1);
   assert.equal(p.moebel[0].breite, 5);
 });
+
+// ── Tablet und Sitzen (06.11.2026) ───────────────────────────────────────────
+import { _onPointerDown, _onPointerMove, _onPointerUp, _resetTouchState, _getTouchMode, type TouchDeps } from '../src/client/touch-handler';
+import { sitzplaetze, istBesetzt } from '../src/types/moebel';
+import { PRESETS } from '../src/client/presets';
+
+function touchDeps(over: Partial<TouchDeps> = {}): { deps: TouchDeps; log: string[] } {
+  const log: string[] = [];
+  const deps: TouchDeps = {
+    pickContactAt: () => null, canDragFigure: () => true,
+    startFigureDrag: () => log.push('fig-start'), moveFigureDrag: () => log.push('fig-move'), endFigureDrag: () => log.push('fig-end'),
+    getOrbitDist: () => 10, setOrbitDist: () => {}, applyOrbitDelta: () => log.push('orbit'),
+    capturePointer: () => {}, releasePointer: () => {},
+    pickMoebelAt: () => 'tisch-1',
+    startMoebelDrag: (id) => { log.push('m-start:' + id); return true; },
+    moveMoebelDrag: () => log.push('m-move'),
+    endMoebelDrag: () => log.push('m-end'),
+    ...over,
+  };
+  return { deps, log };
+}
+
+test('M7 Finger auf Möbel verschiebt es, statt die Ansicht zu drehen', () => {
+  _resetTouchState();
+  const { deps, log } = touchDeps();
+  _onPointerDown({ pointerId: 1, clientX: 10, clientY: 10, isPrimary: true }, deps);
+  assert.equal(_getTouchMode(), 'moebel');
+  _onPointerMove({ pointerId: 1, clientX: 30, clientY: 10 }, deps);
+  _onPointerUp({ pointerId: 1, clientX: 30, clientY: 10 }, deps);
+  assert.deepEqual(log, ['m-start:tisch-1', 'm-move', 'm-end']);
+  assert.equal(_getTouchMode(), null);
+});
+
+test('M8 Figur hat Vorrang vor Möbeln; ohne Möbel dreht der Finger die Ansicht', () => {
+  _resetTouchState();
+  const a = touchDeps({ pickContactAt: () => ({ fig: 'f1' }) });
+  _onPointerDown({ pointerId: 1, clientX: 0, clientY: 0, isPrimary: true }, a.deps);
+  assert.equal(_getTouchMode(), 'figure');
+  _onPointerUp({ pointerId: 1, clientX: 0, clientY: 0 }, a.deps);
+  _resetTouchState();
+  const b = touchDeps({ pickMoebelAt: () => null });
+  _onPointerDown({ pointerId: 1, clientX: 0, clientY: 0, isPrimary: true }, b.deps);
+  assert.equal(_getTouchMode(), 'orbit');
+  _resetTouchState();
+});
+
+test('M9 Zweiter Finger beendet das Möbel-Ziehen und zoomt', () => {
+  _resetTouchState();
+  const { deps, log } = touchDeps();
+  _onPointerDown({ pointerId: 1, clientX: 0, clientY: 0, isPrimary: true }, deps);
+  _onPointerDown({ pointerId: 2, clientX: 50, clientY: 0, isPrimary: false }, deps);
+  assert.equal(_getTouchMode(), 'pinch');
+  _resetTouchState();
+  assert.ok(log.includes('m-start:tisch-1'));
+});
+
+test('M10 Sitzplätze: Stuhl, Sessel, Bank (mehrere), Tisch/Wand keine', () => {
+  const liste = normalisiereMoebel([
+    { id: 's', art: 'stuhl', x: 1, z: 1, facingY: 0 },
+    { id: 'k', art: 'sessel', x: 3, z: 0, facingY: Math.PI },
+    { id: 'b', art: 'bank', x: 0, z: 3, facingY: 0, laenge: 2 },
+    { id: 't', art: 'tisch', x: 0, z: 0, facingY: 0 },
+    { id: 'w', art: 'wand', x: 0, z: -3, facingY: 0 },
+  ]);
+  const p = sitzplaetze(liste);
+  assert.deepEqual(p.map(x => x.name), ['Stuhl 1', 'Sessel 1', 'Bank 1, Platz 1', 'Bank 1, Platz 2', 'Bank 1, Platz 3']);
+  // Stuhl schaut nach +Z → Hüfte etwas dahinter (z kleiner), gleiche Blickrichtung wie der Stuhl
+  assert.deepEqual([p[0].x, p[0].z, p[0].facingY], [1, 0.85, 0]);
+  // Sessel um 180° gedreht → Hüfte liegt auf der anderen Seite
+  assert.ok(p[1].z > 0);
+  assert.equal(istBesetzt(p[0], [{ id: 'f1', x: 1, z: 0.9 }]), true);
+  assert.equal(istBesetzt(p[0], [{ id: 'f1', x: 1, z: 0.9 }], 'f1'), false, 'eigene Figur zählt nicht');
+});
+
+test('M11 Haltung Sitzen: Oberschenkel waagrecht, Knie rechtwinklig', () => {
+  const s = PRESETS.sit;
+  assert.ok(s, 'Haltung sit fehlt');
+  assert.ok(Math.abs(s.lHip.x + Math.PI / 2) < 0.01 && Math.abs(s.lKnee.x - Math.PI / 2) < 0.01);
+  assert.equal(Object.keys(s).length, Object.keys(PRESETS.stand).length);
+});

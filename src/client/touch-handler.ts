@@ -56,9 +56,14 @@ export interface TouchDeps {
   pickRotateRingAt?: (clientX: number, clientY: number) => any | null;
   /** T002050: figure body-mesh hit — single-finger touch parity for whole-figure floor drag. */
   pickBodyAt?: (clientX: number, clientY: number) => any | null;
+  /** Möbel (06.11.2026): Finger auf einem Möbelstück verschiebt es (nur Leitung). */
+  pickMoebelAt?: (clientX: number, clientY: number) => string | null;
+  startMoebelDrag?: (id: string, clientX: number, clientY: number) => boolean;
+  moveMoebelDrag?: (clientX: number, clientY: number) => void;
+  endMoebelDrag?: () => void;
 }
 
-type Mode = 'orbit' | 'figure' | 'pinch' | null;
+type Mode = 'orbit' | 'figure' | 'moebel' | 'pinch' | null;
 
 interface PointerSnap { pointerId: number; clientX: number; clientY: number; }
 
@@ -95,6 +100,7 @@ export function _onPointerDown(
   // neuen Berührung (isPrimary) beginnt deshalb immer von vorn.
   if (e.isPrimary === true && activePointers.size > 0) {
     if (mode === 'figure') deps.endFigureDrag();
+    if (mode === 'moebel') deps.endMoebelDrag?.();
     for (const id of activePointers.keys()) deps.releasePointer(id);
     activePointers.clear();
     mode = null; orbitLast = null; pinchState = null;
@@ -104,6 +110,7 @@ export function _onPointerDown(
 
   if (activePointers.size >= 2) {
     if (mode === 'figure') deps.endFigureDrag();
+    if (mode === 'moebel') deps.endMoebelDrag?.();
     beginPinch(deps);
     return;
   }
@@ -128,6 +135,13 @@ export function _onPointerDown(
   if (body && deps.canDragFigure(body)) {
     mode = 'figure';
     deps.startFigureDrag(body, e.clientX, e.clientY);
+    return;
+  }
+
+  // Möbel (06.11.2026): nach Figuren, vor dem Drehen der Ansicht.
+  const moebelId = deps.pickMoebelAt?.(e.clientX, e.clientY);
+  if (moebelId && deps.startMoebelDrag?.(moebelId, e.clientX, e.clientY)) {
+    mode = 'moebel';
     return;
   }
 
@@ -160,6 +174,11 @@ export function _onPointerMove(
     return;
   }
 
+  if (mode === 'moebel') {
+    deps.moveMoebelDrag?.(e.clientX, e.clientY);
+    return;
+  }
+
   if (mode === 'figure') {
     deps.moveFigureDrag(e.clientX, e.clientY);
   }
@@ -174,6 +193,10 @@ export function _onPointerUp(
 
   if (mode === 'figure') {
     deps.endFigureDrag();
+  }
+  if (mode === 'moebel') {
+    deps.endMoebelDrag?.();
+    mode = activePointers.size ? null : mode;
   }
 
   if (mode === 'pinch') {

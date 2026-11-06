@@ -49,10 +49,11 @@ export function baueModell(m: Moebel): THREE.Group {
       break;
     }
     case 'stuhl':
-      g.add(kasten(breite, 0.05, tiefe, HOLZ, 0, 0.5, 0));
-      beine(g, breite, tiefe, 0.48, HOLZ, 0.045);
+      // Sitzfläche oben bei 0,42 = Oberschenkel einer sitzenden Figur (Haltung „Sitzen“).
+      g.add(kasten(breite, 0.05, tiefe, HOLZ, 0, 0.395, 0));
+      beine(g, breite, tiefe, 0.37, HOLZ, 0.045);
       // Lehne hinten (vorn = +Z → Lehne bei -Z)
-      g.add(kasten(breite, 0.5, 0.05, HOLZ, 0, 0.78, -tiefe / 2 + 0.025));
+      g.add(kasten(breite, 0.5, 0.05, HOLZ, 0, 0.67, -tiefe / 2 + 0.025));
       break;
     case 'sessel':
       g.add(kasten(breite, 0.42, tiefe, POLSTER, 0, 0.21, 0));
@@ -61,8 +62,8 @@ export function baueModell(m: Moebel): THREE.Group {
       g.add(kasten(0.14, 0.25, tiefe, POLSTER, breite / 2 - 0.07, 0.54, 0));
       break;
     case 'bank':
-      g.add(kasten(breite, 0.06, tiefe, HOLZ, 0, 0.48, 0));
-      beine(g, breite, tiefe, 0.45, HOLZ);
+      g.add(kasten(breite, 0.06, tiefe, HOLZ, 0, 0.39, 0));
+      beine(g, breite, tiefe, 0.36, HOLZ);
       break;
     case 'wand':
       g.add(kasten(breite, 1.3, tiefe, WAND, 0, 0.65, 0));
@@ -124,7 +125,7 @@ interface Refs {
   floor: THREE.Object3D;
 }
 
-function strahl(e: MouseEvent, refs: Refs): boolean {
+function strahl(e: { clientX: number; clientY: number }, refs: Refs): boolean {
   refs.mannequin.setNdc(e);
   const { ndc } = refs.mannequin.getTickRefs();
   if (!ndc) return false;
@@ -132,7 +133,9 @@ function strahl(e: MouseEvent, refs: Refs): boolean {
   return true;
 }
 
-function waehleMoebel(e: MouseEvent, refs: Refs): string | null {
+type Punkt = { clientX: number; clientY: number };
+
+function waehleMoebel(e: Punkt, refs: Refs): string | null {
   if (!gruppen.size || !strahl(e, refs)) return null;
   const treffer = refs.raycaster.intersectObjects([...gruppen.values()], true)[0];
   let o: THREE.Object3D | null = treffer?.object ?? null;
@@ -140,50 +143,72 @@ function waehleMoebel(e: MouseEvent, refs: Refs): string | null {
   return null;
 }
 
-function bodenPunkt(e: MouseEvent, refs: Refs): { x: number; z: number } | null {
+function bodenPunkt(e: Punkt, refs: Refs): { x: number; z: number } | null {
   if (!strahl(e, refs)) return null;
   const hit = refs.raycaster.intersectObject(refs.floor, false)[0];
   return hit ? { x: Math.round(hit.point.x * 20) / 20, z: Math.round(hit.point.z * 20) / 20 } : null;
 }
 
+// Gemeinsam für Maus und Finger (Tablet, 06.11.2026).
+let refsGlobal: Refs | null = null;
+let zug: { id: string; dx: number; dz: number } | null = null;
+const darfVerschieben = () => !!refsGlobal && !!(window as any).__brettCurrentUserIsAdmin;
+
+/** Möbel unter dem Punkt (nur für die Leitung), sonst null. */
+export function moebelAn(clientX: number, clientY: number): string | null {
+  if (!darfVerschieben()) return null;
+  return waehleMoebel({ clientX, clientY }, refsGlobal!);
+}
+
+export function starteMoebelZug(id: string, clientX: number, clientY: number): boolean {
+  if (!darfVerschieben()) return false;
+  const m = liste.find(x => x.id === id);
+  const p = bodenPunkt({ clientX, clientY }, refsGlobal!);
+  if (!m || !p) return false;
+  zug = { id, dx: m.x - p.x, dz: m.z - p.z };
+  return true;
+}
+
+export function bewegeMoebelZug(clientX: number, clientY: number): void {
+  if (!zug || !refsGlobal) return;
+  const p = bodenPunkt({ clientX, clientY }, refsGlobal);
+  const g = gruppen.get(zug.id);
+  if (!p || !g) return;
+  g.position.x = p.x + zug.dx;
+  g.position.z = p.z + zug.dz;
+}
+
+export function beendeMoebelZug(): void {
+  if (!zug) return;
+  const g = gruppen.get(zug.id);
+  const id = zug.id;
+  zug = null;
+  if (!g) return;
+  const neu = liste.map(m => m.id === id ? { ...m, x: Math.round(g.position.x * 100) / 100, z: Math.round(g.position.z * 100) / 100 } : m);
+  liste = neu;
+  sende(neu);
+}
+
 export function initMoebelVerschieben(refs: Refs): void {
+  refsGlobal = refs;
   zeichne(); // falls Möbel vor der Szene ankamen
   if (!(window as any).__brettCurrentUserIsAdmin) return;
   const el = refs.renderer.domElement;
-  let zug: { id: string; dx: number; dz: number } | null = null;
 
   el.addEventListener('mousedown', (e) => {
     if (e.button !== 0 || e.shiftKey) return;
     if (refs.mannequin.pickContact?.(e)) return; // Figur hat Vorrang
-    const id = waehleMoebel(e, refs);
-    if (!id) return;
-    const m = liste.find(x => x.id === id);
-    const p = bodenPunkt(e, refs);
-    if (!m || !p) return;
-    zug = { id, dx: m.x - p.x, dz: m.z - p.z };
+    const id = moebelAn(e.clientX, e.clientY);
+    if (!id || !starteMoebelZug(id, e.clientX, e.clientY)) return;
     el.style.cursor = 'grabbing';
     e.preventDefault();
     e.stopImmediatePropagation();
   }, { capture: true });
 
-  window.addEventListener('mousemove', (e) => {
-    if (!zug) return;
-    const p = bodenPunkt(e, refs);
-    const g = gruppen.get(zug.id);
-    if (!p || !g) return;
-    g.position.x = p.x + zug.dx;
-    g.position.z = p.z + zug.dz;
-  });
-
+  window.addEventListener('mousemove', (e) => bewegeMoebelZug(e.clientX, e.clientY));
   window.addEventListener('mouseup', () => {
     if (!zug) return;
-    const g = gruppen.get(zug.id);
-    const id = zug.id;
-    zug = null;
     el.style.cursor = '';
-    if (!g) return;
-    const neu = liste.map(m => m.id === id ? { ...m, x: Math.round(g.position.x * 100) / 100, z: Math.round(g.position.z * 100) / 100 } : m);
-    liste = neu;
-    sende(neu);
+    beendeMoebelZug();
   });
 }

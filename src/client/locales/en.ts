@@ -431,6 +431,7 @@ const en: Record<string, string> = {
   // Haltungen (Figurenfeld)
   'pose.label': 'Posture',
   'pose.stand': 'Stand',
+  'pose.sit': 'Sit',
   'pose.kneel': 'Kneel',
   'pose.prone': 'Lie down',
   'pose.crawl': 'Crawl',
