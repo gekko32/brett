@@ -152,11 +152,16 @@ export function klientBlock(hf: PultHelfer): HTMLElement {
   };
   fuelleKandidaten();
   const aufnehmen = knopf('＋ ' + t('kl.add'), async () => {
-    if (!kandidat.value) return;
-    try { await sendeJson('/api/klienten', 'POST', { customer_id: kandidat.value }); klient.meldung = '✓ ' + t('kl.added'); }
+    const neuId = kandidat.value;
+    if (!neuId) return;
+    let ok = false;
+    try { await sendeJson('/api/klienten', 'POST', { customer_id: neuId }); ok = true; klient.meldung = '✓ ' + t('kl.added'); }
     catch { klient.meldung = '⚠ ' + t('kl.failed'); }
-    klient.kandidaten = klient.kandidaten.filter(k => k.id !== kandidat.value);
-    await ladeKlienten(); hf.neuZeichnen();
+    klient.kandidaten = klient.kandidaten.filter(k => k.id !== neuId);
+    await ladeKlienten();
+    // Gerald 06.11.2026: Hat die Sitzung noch keinen Klienten, gleich zuordnen (kein Umweg über „Übernehmen“).
+    if (ok && !klient.aktuell) { await setzeSitzungsKlient(neuId, hf); klient.meldung = '✓ ' + t('kl.addedAssigned'); hf.neuZeichnen(); return; }
+    hf.neuZeichnen();
   });
 
   const verwaltung: Node[] = [
@@ -181,17 +186,30 @@ export function klientBlock(hf: PultHelfer): HTMLElement {
       h('div', { class: 'klein' }, t('kl.deleteHint')),
     );
   }
-  const verwaltenBox = h('details', { class: 'unterblock', open: verwaltenOffen }, h('summary', {}, t('kl.manage')), ...verwaltung);
+  // Noch keine Coaching-Klienten → Aufnahme gleich offen (Gerald 06.11.2026).
+  const leer = klient.liste.length === 0;
+  const offenJetzt = verwaltenOffen || leer;
+  const verwaltenBox = h('details', { class: 'unterblock', open: offenJetzt }, h('summary', {}, t('kl.manage')), ...verwaltung);
   verwaltenBox.addEventListener('toggle', () => {
     verwaltenOffen = verwaltenBox.open;
-    if (verwaltenBox.open) void ladeKandidaten();
+    if (verwaltenBox.open && !klient.kandidaten.length) void ladeKandidaten();
+  });
+  if (offenJetzt && !klient.kandidaten.length) void ladeKandidaten();
+  // Direkt vom Klient-Feld zur Aufnahme springen.
+  const zurAufnahme = knopf('＋ ' + t('kl.addShort'), () => {
+    verwaltenOffen = true;
+    verwaltenBox.open = true;
+    kandidat.focus();
+    verwaltenBox.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   });
 
   const meldung = h('div', { class: 'klein' }, klient.meldung);
   return hf.block('klient', t('kl.title'),
     ...erinnerungen(hf),
     aktuell,
+    ...(leer ? [h('div', { class: 'hinweis-box' }, t('kl.emptyHint'))] : []),
     h('label', { class: 'feld' }, t('kl.session'), h('div', { class: 'reihe', style: { flexWrap: 'nowrap' } }, wahl, uebernehmen)),
+    h('div', { class: 'reihe', style: { marginTop: '2px' } }, zurAufnahme),
     meldung,
     verwaltenBox,
   );

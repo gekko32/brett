@@ -499,5 +499,9 @@ const de: Record<string, string> = {
   'cmp.onlyLeft': 'Nur links',
   'cmp.onlyRight': 'Nur rechts',
   'cmp.loadFailed': 'Aufstellungen konnten nicht geladen werden (angemeldet?)',
+  // Klient aufnehmen direkt (06.11.2026)
+  'kl.addShort': 'Klient aufnehmen',
+  'kl.emptyHint': 'Noch keine Coaching-Klienten. Unten einen Kunden auswählen und „Aufnehmen“ – er wird dann gleich dieser Sitzung zugeordnet.',
+  'kl.addedAssigned': 'Aufgenommen und dieser Sitzung zugeordnet',
 };
 export default de;

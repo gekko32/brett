@@ -498,5 +498,9 @@ const en: Record<string, string> = {
   'cmp.onlyLeft': 'Only left',
   'cmp.onlyRight': 'Only right',
   'cmp.loadFailed': 'Could not load constellations (logged in?)',
+  // Klient aufnehmen direkt (06.11.2026)
+  'kl.addShort': 'Add client',
+  'kl.emptyHint': 'No coaching clients yet. Choose a customer below and click “Add” – they will be assigned to this session right away.',
+  'kl.addedAssigned': 'Added and assigned to this session',
 };
 export default en;

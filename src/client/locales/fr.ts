@@ -498,5 +498,9 @@ const fr: Record<string, string> = {
   'cmp.onlyLeft': 'Seulement à gauche',
   'cmp.onlyRight': 'Seulement à droite',
   'cmp.loadFailed': 'Impossible de charger les constellations (connecté ?)',
+  // Klient aufnehmen direkt (06.11.2026)
+  'kl.addShort': 'Ajouter un client',
+  'kl.emptyHint': 'Pas encore de clients de coaching. Choisissez un client ci-dessous et cliquez sur « Ajouter » – il sera aussitôt associé à cette séance.',
+  'kl.addedAssigned': 'Ajouté et associé à cette séance',
 };
 export default fr;
