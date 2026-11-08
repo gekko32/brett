@@ -6,12 +6,15 @@
 // Spielfeld (Klasse `praesentation` am body). Außerdem: Kamera und
 // Beziehungs-Ebene vom Pult aus steuern.
 import { istTouchGeraet } from './zum-brett';
+import { getWs, isWsReady } from './state';
 
 export type KameraAktion = 'links' | 'rechts' | 'hoch' | 'runter' | 'naeher' | 'weiter' | 'zurueck' | 'draufsicht';
 
 export type PultNachricht =
   | { type: 'select'; id: string | null; von: 'brett' | 'pult' }
   | { type: 'ping' }
+  // Innensicht aus der Seitenleiste: Leiste schließen, damit man etwas sieht (08.11.2026).
+  | { type: 'innensicht'; figureId: string | null }
   | { type: 'bye' }
   | { type: 'kamera'; aktion: KameraAktion }
   | { type: 'beziehungen'; sichtbar: boolean }
@@ -72,6 +75,13 @@ export function initSteuerpultSync(): void {
   if (!kanal) return;
   kanal.onmessage = (e: MessageEvent<PultNachricht>) => {
     const m = e.data;
+    if (m.type === 'innensicht') {
+      // Das Brett übernimmt die Innensicht selbst; die Leiste geht zu, damit man etwas sieht.
+      const ws = getWs();
+      if (isWsReady() && ws) ws.send(JSON.stringify(m.figureId ? { type: 'figure_possess', figureId: m.figureId } : { type: 'figure_release' }));
+      if (m.figureId) { document.getElementById('pult-leiste')?.remove(); window.dispatchEvent(new Event('resize')); }
+      return;
+    }
     if (m.type === 'ping') { letzterPing = Date.now(); setPraesentation(true); return; }
     if (m.type === 'bye') { letzterPing = 0; setPraesentation(false); return; }
     if (m.type === 'kamera') { kamera(m.aktion); return; }

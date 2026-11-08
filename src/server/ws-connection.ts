@@ -4,6 +4,7 @@
 
 import { WebSocketServer } from 'ws';
 import type { WsDeps } from './ws-handler';
+import { KLIENT_SYNC_PFAD } from './klient-sync-pfad';
 import {
   gateSessionReady,
   gateMutation,
@@ -48,6 +49,12 @@ export function attachWsServer(wss: WebSocketServer, deps: WsDeps): void {
     // T000608: View-only-Share-Link — ein gültiger share_token macht die
     // Verbindung zum read-only-Gast (ws._isGuest), ungültige Tokens werden
     // mit 4403 geschlossen.
+    // Schlüssel prüfen und Anmeldung lesen dauern einen Moment. Nachrichten, die
+    // solange eintreffen (der Beitritt kommt sofort nach dem Öffnen), warten darauf.
+    // Vorher: Beitritt ging verloren bzw. „not-ready“, das Brett hing ohne
+    // Verbindung, z. B. nach dem App-Wechsel am Handy (08.11.2026).
+    ws._pruefungLaeuft = true;
+    const tokenPruefung = (async () => {
     try {
       const wsUrl = new URL(req?.url ?? '/', `http://${req?.headers?.host ?? 'x'}`);
       const shareToken = wsUrl.searchParams.get('share_token');
@@ -56,6 +63,19 @@ export function attachWsServer(wss: WebSocketServer, deps: WsDeps): void {
         if (!roomToken) { ws.close(4403, 'invalid_share_token'); return; }
         ws._shareRoom = roomToken;
         ws._isGuest = true;
+      }
+      // Klienten-Link (08.11.2026): Diese Verbindung kommt ohne Anmeldung durch die
+      // Sperre davor. Ein ungültiger Schlüssel wird getrennt, es gibt keinen
+      // Rückfall auf „anonym“.
+      const klientPfad = KLIENT_SYNC_PFAD.exec(wsUrl.pathname);
+      if (klientPfad) {
+        const roomToken = deps.resolveKlientToken
+          ? await deps.resolveKlientToken(klientPfad[1])
+          : null;
+        if (!roomToken) { ws.close(4403, 'invalid_klient_token'); return; }
+        ws._shareRoom = roomToken;
+        ws._isZuschauer = true;
+        ws._isKlient = true;
       }
       const zuschauerToken = wsUrl.searchParams.get('zuschauer_token');
       if (zuschauerToken && deps.resolveZuschauerToken) {
@@ -66,17 +86,28 @@ export function attachWsServer(wss: WebSocketServer, deps: WsDeps): void {
       }
     } catch (err) {
       console.error('[brett] share-token resolve error:', err);
+      // Ohne geprüften Schlüssel keine Verbindung am Anmeldeschutz vorbei.
+      try { if (KLIENT_SYNC_PFAD.test(new URL(req?.url ?? '/', 'http://x').pathname)) { ws.close(1011, 'token_check_failed'); return; } } catch { /* unten */ }
     }
-    if (deps.sessionMiddleware && req) {
-      deps.sessionMiddleware(req, {}, () => {
-        ws._session = req.session;
+    })().finally(() => { ws._pruefungLaeuft = false; });
+    const sessionBereit = new Promise<void>((fertig) => {
+      if (deps.sessionMiddleware && req) {
+        deps.sessionMiddleware(req, {}, () => {
+          ws._session = req.session;
+          ws._sessionReady = true;
+          fertig();
+        });
+      } else {
+        // No middleware (tests / unauthenticated transport) → session resolution
+        // is trivially complete.
         ws._sessionReady = true;
-      });
-    } else {
-      // No middleware (tests / unauthenticated transport) → session resolution
-      // is trivially complete.
-      ws._sessionReady = true;
-    }
+        fertig();
+      }
+    });
+    const bereit = Promise.race([
+      Promise.all([tokenPruefung, sessionBereit]),
+      new Promise<void>((fertig) => { setTimeout(fertig, 3000).unref?.(); }),
+    ]);
     ws.isAlive = true;
 
     ws.on('message', async (raw: any) => {
@@ -91,12 +122,18 @@ export function attachWsServer(wss: WebSocketServer, deps: WsDeps): void {
           ws.isAlive = true;
           return;
         }
+        if (ws._pruefungLaeuft || !ws._sessionReady) {
+          await bereit;
+          if (ws.readyState !== undefined && ws.readyState !== 1) return; // Schlüssel ungültig: schon getrennt
+        }
         // Block any non-pong message until the session is wired, so isAdmin/role
         // resolution never runs against an undefined session.
         if (!gateSessionReady(ws, (m: any) => ws.send(JSON.stringify(m)))) {
           return;
         }
         if (msg.type === 'join' && typeof msg.room === 'string') {
+          // Ein Link gilt nur für seinen eigenen Raum (08.11.2026).
+          if (ws._shareRoom && msg.room !== ws._shareRoom) { ws.close(4403, 'room_mismatch'); return; }
           const room = msg.room;
           deps.joinRoom(ws, room);
 
@@ -156,7 +193,7 @@ export function attachWsServer(wss: WebSocketServer, deps: WsDeps): void {
             ws._playerId = pid;
             deps.broadcast(room, {
               type: 'presence_join',
-              participant: { userId: pid, name: ws._session?.name ?? 'Zuschauer', role: 'zuschauer' },
+              participant: { userId: pid, name: ws._isKlient ? 'Klient' : (ws._session?.name ?? 'Zuschauer'), role: 'zuschauer' },
             });
           }
 
@@ -381,8 +418,11 @@ export function attachWsServer(wss: WebSocketServer, deps: WsDeps): void {
         if (orphaned.length) deps.schedulePersist(room);
         // Auto-release possessions on disconnect: every figure this player
         // was embodying is freed so another participant can take over.
+        // Nicht, solange derselbe Nutzer noch verbunden ist: Schließt sich nur das
+        // Steuerpult, läuft die Innensicht auf dem Brett weiter (08.11.2026).
         const figMap = deps.figureMaps.get(room);
-        if (figMap) {
+        const nochDa = [...(deps.rooms.get(room) ?? [])].some((s: any) => s !== ws && s.readyState === 1 && resolvePlayerId(s) === pid);
+        if (figMap && !nochDa) {
           const releasedIds: string[] = [];
           for (const [fid, f] of figMap.entries()) {
             if (f.possessor === pid) {

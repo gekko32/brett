@@ -34,6 +34,8 @@ export const klient = {
   liste: [] as KlientEintrag[],
   kandidaten: [] as KlientKurz[],
   meldung: '',
+  /** Persönlicher Link der Sitzung (08.11.2026). */
+  link: null as { url: string; ablauf: string } | null,
 };
 
 export function klientName(k: KlientKurz): string {
@@ -72,8 +74,16 @@ export async function starteKlient(room: string, neuZeichnen: () => void): Promi
     const e = klient.liste.find(k => k.id === klient.aktuell!.id);
     if (e) klient.aktuell = { id: e.id, name: e.name, nummer: e.nummer };
   }
+  await ladeLink();
   klient.geladen = true;
   neuZeichnen();
+}
+
+async function ladeLink(): Promise<void> {
+  try {
+    const r = await json('/api/rooms/' + encodeURIComponent(klient.room) + '/klient-link');
+    klient.link = r?.url ? { url: r.url, ablauf: r.ablauf } : null;
+  } catch { klient.link = null; }
 }
 
 async function setzeSitzungsKlient(id: string | null, hf: PultHelfer): Promise<void> {
@@ -82,6 +92,7 @@ async function setzeSitzungsKlient(id: string | null, hf: PultHelfer): Promise<v
     const e = id ? klient.liste.find(k => k.id === id) : null;
     klient.aktuell = e ? { id: e.id, name: e.name, nummer: e.nummer } : null;
     klient.meldung = '✓ ' + t('kl.set');
+    await ladeLink();
   } catch { klient.meldung = '⚠ ' + t('kl.failed'); }
   hf.neuZeichnen();
 }
@@ -126,6 +137,39 @@ function erinnerungen(hf: PultHelfer): Node[] {
 }
 
 let verwaltenOffen = false;
+
+function linkBereich(hf: PultHelfer): Node[] {
+  const { h, knopf } = hf;
+  if (!klient.aktuell) return [];
+  const pfad = '/api/rooms/' + encodeURIComponent(klient.room) + '/klient-link';
+  const erzeugen = async () => {
+    try { const r = await sendeJson(pfad, 'POST'); klient.link = { url: r.url, ablauf: r.ablauf }; klient.meldung = '✓ Link erstellt'; }
+    catch { klient.meldung = '⚠ ' + t('kl.failed'); }
+    hf.neuZeichnen();
+  };
+  if (!klient.link) {
+    return [h('div', { class: 'reihe', style: { marginTop: '4px' } }, knopf('🔗 Link für den Klienten erstellen', () => { void erzeugen(); }))];
+  }
+  const feld = h('input', { type: 'text', readonly: true }) as HTMLInputElement;
+  feld.value = klient.link.url;
+  feld.addEventListener('focus', () => feld.select());
+  const bis = new Date(klient.link.ablauf).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' });
+  const kopieren = knopf('Kopieren', async () => {
+    try { await navigator.clipboard.writeText(feld.value); klient.meldung = '✓ Link kopiert'; }
+    catch { feld.select(); klient.meldung = 'Bitte den markierten Link von Hand kopieren'; }
+    hf.neuZeichnen();
+  });
+  return [
+    h('label', { class: 'feld' }, 'Link für den Klienten (ohne Konto, nur Ansehen)', feld),
+    h('div', { class: 'klein' }, 'Gültig bis ' + bis + '. Wer den Link hat, sieht das Brett – nur an den Klienten geben.'),
+    h('div', { class: 'reihe', style: { marginTop: '4px' } }, kopieren,
+      mitBestaetigung(hf, '⛔ Link sperren', 'Wirklich sperren?', async () => {
+        try { await json(pfad, { method: 'DELETE' }); klient.link = null; klient.meldung = '✓ Link gesperrt'; }
+        catch { klient.meldung = '⚠ ' + t('kl.failed'); }
+        hf.neuZeichnen();
+      })),
+  ];
+}
 
 export function klientBlock(hf: PultHelfer): HTMLElement {
   const { h, knopf } = hf;
@@ -210,6 +254,7 @@ export function klientBlock(hf: PultHelfer): HTMLElement {
     ...(leer ? [h('div', { class: 'hinweis-box' }, t('kl.emptyHint'))] : []),
     h('label', { class: 'feld' }, t('kl.session'), h('div', { class: 'reihe', style: { flexWrap: 'nowrap' } }, wahl, uebernehmen)),
     h('div', { class: 'reihe', style: { marginTop: '2px' } }, zurAufnahme),
+    ...linkBereich(hf),
     meldung,
     verwaltenBox,
   );

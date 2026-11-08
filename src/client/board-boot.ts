@@ -29,6 +29,7 @@ import * as importUi from './ui/import';
 import * as groundObjects from './ground-objects';
 import { initZoneEditing } from './ui/zone-editor';
 import { initMoebelVerschieben } from './moebel-3d';
+import { initBildschirmRueckkehr } from './bildschirm-rueckkehr';
 import * as cameraModes from './camera-modes';
 import * as viewCone from './view-cone';
 import * as snapping from './snapping';
@@ -213,6 +214,8 @@ export async function bootBoard(): Promise<void> {
 
   // Möbel und Wände (06.11.2026): zeichnen + mit der Maus verschieben (Leitung).
   initMoebelVerschieben({ renderer, raycaster, mannequin, floor: sceneApi.floor });
+  // App-Wechsel am Handy: schwarzen Bildschirm verhindern (08.11.2026).
+  initBildschirmRueckkehr(renderer.domElement, renderer.getContext(), isWsReady);
 
   // ── T000606: Touch / Pointer-Events handler ────────────────────────────────
   initBoardTouchControls({

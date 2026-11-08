@@ -336,6 +336,15 @@
     #fig-panel #presets .preset-btn { font-size: 11px; padding: 4px 2px; }
     /* Rand-Reiter „Figur bearbeiten“ entfällt: Öffnen über ✎ am Schwebemenü. */
     #fig-panel-edge-tab { display: none !important; }
+    /* Handy (08.11.2026): Anker/Fläche liegen jetzt im Steuerpult; Maus-Hinweise verdeckten nur das Brett. */
+    #ground-objects-toolbar { display: none !important; }
+    @media (pointer: coarse) { #status-pill, #observer-hint { display: none !important; } }
+    /* Innensicht (08.11.2026): Das Feld unten links hat alles; Rückgängig/Wiederholen und der
+       doppelte Beenden-Knopf lagen darüber und waren am Handy nicht zu treffen. */
+    body:has(#pov-panel) #btn-undo, body:has(#pov-panel) #btn-redo, body:has(#pov-panel) #btn-release-possession { display: none !important; }
+    /* Klienten-Link (08.11.2026): nur das Brett und die Frage. */
+    body.klient-ansicht > *:not(canvas):not(#regiebuch-frage):not(#klient-meldung):not(script) { display: none !important; }
+    #klient-meldung { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 80vw; color: #e7ead0; font: 16px/1.5 system-ui, sans-serif; text-align: center; }
     /* Präsentationsansicht: solange das Steuerpult-Fenster offen ist, zeigt das
        Brett nur das Spielfeld (für Bildschirmteilen). */
     body.praesentation > *:not(canvas):not(#regiebuch-frage) { display: none !important; }
@@ -528,6 +537,8 @@
       `Code: <strong class="session-toast-code">${m.code}</strong><br/>` +
       `<a href="/api/join?code=${m.code}" class="session-toast-link" onclick="navigator.clipboard.writeText(this.href); this.textContent='Kopiert!'; return false;">Link kopieren</a>`;
     document.body.appendChild(toast);
+    // Verschwindet von selbst; der Code steht weiter im Steuerpult (08.11.2026).
+    setTimeout(() => toast.remove(), 10000);
   });
 </script>
     <!-- E1 (T001931): Kern-Dark-Launch-Flags default-aktivieren. Bereits gesetzte

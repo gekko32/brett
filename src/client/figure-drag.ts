@@ -47,6 +47,7 @@ export function shouldSend(now: number, last: number, intervalMs = 33): boolean 
 // stream throttled `move` updates via the pure helpers above.
 
 import * as THREE from 'three';
+import { figurZugStart, figurLosgelassen } from './moebel-3d';
 import { STATE, ui, getWs, isWsReady, currentUser, activeLocks } from './state';
 
 export interface FigureDragDeps {
@@ -104,6 +105,7 @@ export function initFigureDrag(deps: FigureDragDeps): void {
 
   renderer.domElement.addEventListener('mousedown', (e: MouseEvent) => {
     if (e.button !== 0 || e.shiftKey) return;
+    if ((window as any).__brettIsZuschauer) return; // Klient/Zuschauer: nur ansehen
 
     // Priority 1: contact sphere → IK bone drag (unchanged behaviour).
     const sphere = mannequin.pickContact(e);
@@ -150,6 +152,7 @@ export function initFigureDrag(deps: FigureDragDeps): void {
       const root = { x: bodyFig.root.position.x, z: bodyFig.root.position.z };
       const grabOffset = computeGrabOffset({ x: floorHit.x, z: floorHit.z }, root);
       ui.dragging = { kind: 'body', figId: bodyFig.id, grabOffset };
+      figurZugStart(bodyFig);
       e.preventDefault();
     }
   });
@@ -230,6 +233,7 @@ export function initFigureDrag(deps: FigureDragDeps): void {
         snapping.finishDrag(fig);
       } else if (d.kind === 'body') {
         snapping.finishDrag(fig);
+        figurLosgelassen(fig); // Auf einen Stuhl gezogen → setzt sich (08.11.2026)
       } else if (d.kind === 'rotate') {
         wsClient.sendMove(fig.id, fig.root.position.x, fig.root.position.z, fig.facingY);
       }

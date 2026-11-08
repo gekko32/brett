@@ -24,7 +24,7 @@ export function initUndoRedo(
   const undoBtn = document.createElement('button');
   undoBtn.id = 'btn-undo';
   undoBtn.textContent = '↩ ' + t('topbar.undo');
-  Object.assign(undoBtn.style, { ...commonStyle, right: '160px' });
+  Object.assign(undoBtn.style, { ...commonStyle, right: '190px' });
   undoBtn.disabled = true;
 
   const redoBtn = document.createElement('button');

@@ -89,6 +89,7 @@ export interface WsDeps {
   cleanupRoomTracking?: (room: string) => void;
   resolveShareToken?: (token: string) => Promise<string | null>;
   resolveZuschauerToken?: (token: string) => Promise<string | null>;
+  resolveKlientToken?: (token: string) => Promise<string | null>;
 }
 
 // Coaching-only relay set. `jump` (§4.5) is relayed + canMutate-gated like move,

@@ -23,6 +23,7 @@ import { rb, regiebuchBlock, ladeRegiebuecher } from './pult-regiebuch';
 import { moebelZustand, moebelBlock } from './pult-moebel';
 import { sitzplaetze, istBesetzt } from '../types/moebel';
 import { zumBrettKnopf } from './zum-brett';
+import { markierungenEmpfangen, markierungenBlock } from './pult-markierungen';
 
 /** Zuletzt geladene gespeicherte Aufstellung: neue Speicherungen vermerken sie als Herkunft. */
 let geladenVon: string | null = null;
@@ -125,6 +126,7 @@ async function verbinden(): Promise<void> {
 }
 
 function empfangen(m: any): void {
+  if (markierungenEmpfangen(m) && m.type !== 'snapshot') { zeichnen(); return; }
   switch (m.type) {
     case 'snapshot':
       figuren.clear();
@@ -707,6 +709,10 @@ function figurBlock(): HTMLElement | null {
     h('label', { class: 'feld' }, t('pult.rotate'), drehReihe),
     h('label', { class: 'feld' }, t('pose.label'), haltung),
     h('label', { class: 'feld' }, 'Sitzplatz', sitzWahl),
+    // Innensicht auch ohne Doppelklick, also auf Handy und Tablet (08.11.2026).
+    h('div', { class: 'reihe', style: { marginTop: '4px' } },
+      knopf('👁 Aus Sicht dieser Figur', () => kanal?.postMessage({ type: 'innensicht', figureId: id } satisfies PultNachricht)),
+      knopf('↩ Innensicht beenden', () => kanal?.postMessage({ type: 'innensicht', figureId: null } satisfies PultNachricht))),
     h('label', { class: 'feld' }, t('pult.color'), farben),
     h('label', { class: 'feld' }, t('pult.size'), groessen),
     h('div', { class: 'reihe', style: { marginTop: '8px' } }, loeschen));
@@ -744,12 +750,17 @@ function zeichnen(erzwingen = false): void {
   const r = regiebuchBlock({ h, knopf, block, neuZeichnen: () => zeichnen(true) },
     { room, senden, speichereStand: speichereAufstellung }); r.dataset.block = 'regiebuch';
   const mb = moebelBlock({ h, knopf, block, neuZeichnen: () => zeichnen(true) },
-    { senden, belegtePlaetze: () => [...figuren.values()].map(x => ({ x: x.x, z: x.z })) }); mb.dataset.block = 'moebel';
+    { senden, belegtePlaetze: () => [...figuren.values()].map(x => ({ x: x.x, z: x.z })),
+      figuren: () => [...figuren.values()].map(x => ({ id: x.id, x: x.x, z: x.z, preset: x.preset })),
+      bewegeFigur: (id, x, z, facingY) => { const f = figuren.get(id); if (f) figuren.set(id, { ...f, x, z, facingY }); senden({ type: 'move', id, x, z, facingY }); },
+      stehAuf: (id) => aendern(id, { preset: 'stand', boneOverrides: {} }) }); mb.dataset.block = 'moebel';
+  const mk = markierungenBlock({ h, knopf, block, neuZeichnen: () => zeichnen(true) },
+    { senden, belegtePlaetze: () => [...figuren.values()].map(x => ({ x: x.x, z: x.z })) }); mk.dataset.block = 'markierungen';
   const a = ansichtBlock(); a.dataset.block = 'ansicht';
   const sp = speichernBlock(); sp.dataset.block = 'teilen';
   const p = personenBlock(); p.dataset.block = 'personen';
   const f = figurBlock();
-  main.append(s, r, mb, a, sp, p);
+  main.append(s, r, mb, mk, a, sp, p);
   if (f) { f.dataset.block = 'figur'; main.append(f); }
   else main.append(h('div', { class: 'klein', style: { padding: '0 4px' } }, t('pult.selectHint')));
 }

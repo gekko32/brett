@@ -46,11 +46,6 @@ export function menuModel(user: MenuUser): MenuModel {
     items.push({ id: 'new-session', label: 'Neue Session starten', hint: 'Eine Aufstellung leiten' });
   }
   items.push({ id: 'join', label: 'Session beitreten', hint: 'Mit Code teilnehmen' });
-  // FE-4: these screens do not exist yet — render them visibly disabled ("bald
-  // verfügbar") instead of as active buttons that silently no-op / dump the user
-  // onto a blank board.
-  items.push({ id: 'saved', label: 'Gespeicherte Aufstellungen', hint: 'bald verfügbar', disabled: true });
-  items.push({ id: 'settings', label: 'Einstellungen', hint: 'bald verfügbar', disabled: true });
   return { items, identityLine: `angemeldet als: ${user.name}` };
 }
 

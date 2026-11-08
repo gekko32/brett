@@ -158,3 +158,54 @@ test('M11 Haltung Sitzen: Oberschenkel waagrecht, Knie rechtwinklig', () => {
   assert.ok(Math.abs(s.lHip.x + Math.PI / 2) < 0.01 && Math.abs(s.lKnee.x - Math.PI / 2) < 0.01);
   assert.equal(Object.keys(s).length, Object.keys(PRESETS.stand).length);
 });
+
+// ── Hinsetzen, Mitnehmen, Rückkehr (08.11.2026) ─────────────────────────────
+import { naechsterSitzplatz, sitztAufPlatz, sitzendeAuf, mitnehmen } from '../src/types/moebel';
+import { sollNeuLaden } from '../src/client/bildschirm-rueckkehr';
+import { istKlientenAdresse } from '../src/client/klient-ansicht';
+
+const stuhl = { id: 's', art: 'stuhl' as const, x: 1, z: 1, facingY: 0 };
+
+test('M12 Figur nahe am freien Stuhl rastet ein, besetzter oder ferner Stuhl nicht', () => {
+  const f = { id: 'f1', x: 1.2, z: 1 };
+  assert.equal(naechsterSitzplatz([stuhl], f, [f])?.moebelId, 's');
+  assert.equal(naechsterSitzplatz([stuhl], { id: 'f1', x: 3, z: 3 }, [f]), null, 'zu weit weg');
+  const besetzt = { id: 'f2', x: 1, z: 0.85 };
+  assert.equal(naechsterSitzplatz([stuhl], f, [f, besetzt]), null, 'schon besetzt');
+});
+
+test('M13 Sitzende werden beim Verschieben und Drehen mitgenommen, Stehende nicht', () => {
+  const sitzt = { id: 'a', x: 1, z: 0.85, preset: 'sit' };
+  const steht = { id: 'b', x: 1, z: 0.85, preset: 'stand' };
+  assert.equal(sitztAufPlatz([stuhl], sitzt), true);
+  assert.equal(sitztAufPlatz([stuhl], steht), false);
+  assert.deepEqual(sitzendeAuf(stuhl, [sitzt, steht]).map(f => f.id), ['a']);
+  assert.deepEqual(mitnehmen(stuhl, { ...stuhl, x: 3 }, [sitzt, steht]), [{ id: 'a', x: 3, z: 0.85, facingY: 0 }]);
+  const [d] = mitnehmen(stuhl, { ...stuhl, facingY: Math.PI }, [sitzt]);
+  assert.ok(Math.abs(d.z - 1.15) < 0.01 && d.facingY === Math.PI, 'gedreht: Hüfte auf der anderen Seite');
+});
+
+test('M14 Bank verkürzt: Platz weg, Figur wird nicht mitgenommen', () => {
+  const bank = { id: 'b', art: 'bank' as const, x: 0, z: 0, facingY: 0, laenge: 2 };
+  const p = sitzplaetze([bank]);
+  assert.equal(p.length, 3);
+  const f = { id: 'a', x: p[2].x, z: p[2].z, preset: 'sit' };
+  assert.deepEqual(mitnehmen(bank, { ...bank, laenge: 1 }, [f]), []);
+});
+
+test('M15 Rückkehr ans Handy: Grafik verloren → neu laden, sonst nicht, kein Endlos-Neuladen', () => {
+  const basis = { sichtbar: true, grafikVerloren: false, verbindungWeg: false, wegMs: 60000, seitNeustartMs: 60000 };
+  assert.equal(sollNeuLaden({ ...basis, grafikVerloren: true }), true);
+  assert.equal(sollNeuLaden(basis), false, 'alles in Ordnung');
+  assert.equal(sollNeuLaden({ ...basis, grafikVerloren: true, sichtbar: false }), false, 'erst wenn wieder sichtbar');
+  assert.equal(sollNeuLaden({ ...basis, grafikVerloren: true, seitNeustartMs: 3000 }), false, 'keine Endlosschleife');
+  assert.equal(sollNeuLaden({ ...basis, verbindungWeg: true }), true, 'lange weg und keine Verbindung');
+  assert.equal(sollNeuLaden({ ...basis, verbindungWeg: true, wegMs: 3000 }), false, 'kurzer Wechsel: Verbindung kommt von selbst');
+});
+
+test('M16 Klienten-Adresse: nur genau /k/<32 Zeichen>', () => {
+  assert.equal(istKlientenAdresse('/k/' + 'a'.repeat(32)), true);
+  assert.equal(istKlientenAdresse('/k/abc'), false);
+  assert.equal(istKlientenAdresse('/k/' + 'a'.repeat(32) + '/x'), false);
+  assert.equal(istKlientenAdresse('/'), false);
+});
