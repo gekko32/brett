@@ -106,6 +106,35 @@ export function canMutate(ctx: MutateContext): boolean {
 }
 
 /**
+ * Klienten-Link (Gerald 08.11.2026): Der Klient darf Figuren bewegen, drehen und
+ * setzen, sonst nichts. Default-Deny, gilt vor jeder anderen Prüfung und für
+ * jeden Nachrichtentyp, auch für Admin-Befehle.
+ */
+export function klientDarf(msg: any): boolean {
+  const zahl = (v: unknown) => typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= 1000;
+  switch (msg?.type) {
+    case 'join':
+    case 'request_state_snapshot':
+    case 'figure_lock':
+    case 'figure_unlock':
+      return true;
+    case 'move':
+      return typeof msg.id === 'string' && zahl(msg.x) && zahl(msg.z) && (msg.facingY === undefined || zahl(msg.facingY));
+    case 'update': {
+      // Nur Stehen und Sitzen; gezogene Gelenke werden dabei zurückgesetzt.
+      const c = msg.changes;
+      if (typeof msg.id !== 'string' || !c || typeof c !== 'object') return false;
+      if (c.preset !== 'stand' && c.preset !== 'sit') return false;
+      const b = c.boneOverrides;
+      if (b !== undefined && (typeof b !== 'object' || b === null || Object.keys(b).length > 0)) return false;
+      return Object.keys(c).every((k) => k === 'preset' || k === 'boneOverrides');
+    }
+    default:
+      return false;
+  }
+}
+
+/**
  * Strict role resolution. Roles key ONLY on the authenticated session id
  * (`ws._session.userId`). A session-less client (anon / client-supplied
  * `_playerId` only) can NEVER bear a role above beobachter — this prevents a

@@ -101,7 +101,8 @@ export async function bootBoard(): Promise<void> {
   // ── Auth ───────────────────────────────────────────────────────────
   let _isAdmin = false;
   try {
-    const me = await (await fetch('/auth/me')).json();
+    // Klienten-Link: Auch im Browser eines angemeldeten Admins nur Klient.
+    const me = (window as any).__brettIsKlient ? {} : await (await fetch('/auth/me')).json();
     if (me.userId) {
       currentUser.userId = me.userId;
       currentUser.name = me.name;

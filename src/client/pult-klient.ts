@@ -160,7 +160,7 @@ function linkBereich(hf: PultHelfer): Node[] {
     hf.neuZeichnen();
   });
   return [
-    h('label', { class: 'feld' }, 'Link für den Klienten (ohne Konto, nur Ansehen)', feld),
+    h('label', { class: 'feld' }, 'Link für den Klienten (ohne Konto; kann Figuren bewegen, drehen und setzen)', feld),
     h('div', { class: 'klein' }, 'Gültig bis ' + bis + '. Wer den Link hat, sieht das Brett – nur an den Klienten geben.'),
     h('div', { class: 'reihe', style: { marginTop: '4px' } }, kopieren,
       mitBestaetigung(hf, '⛔ Link sperren', 'Wirklich sperren?', async () => {

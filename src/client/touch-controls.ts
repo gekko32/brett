@@ -42,7 +42,7 @@ export function initBoardTouchControls(deps: TouchControlsDeps): void {
     if (!fig) return false;
     const lock = activeLocks.get(fig.id);
     if (lock && lock.userId !== currentUser.userId) return false;
-    if ((window as any).__brettIsZuschauer) return false; // Klient/Zuschauer: nur ansehen
+    if ((window as any).__brettIsZuschauer && !(window as any).__brettIsKlient) return false; // Zuschauer: nur ansehen
     if (getCurrentModerationState().freeze) {
       const myRole = wsClient.getLobbyState()?.roster?.[currentUser.userId]?.role;
       if (myRole !== 'leiter') return false;
@@ -64,11 +64,11 @@ export function initBoardTouchControls(deps: TouchControlsDeps): void {
   };
 
   const touchDeps: TouchDeps = {
-    pickContactAt: (x, y) => mannequin.pickContact({ clientX: x, clientY: y }),
+    pickContactAt: (x, y) => ((window as any).__brettIsKlient ? null : mannequin.pickContact({ clientX: x, clientY: y })),
     pickRotateRingAt: (x, y) => mannequin.pickRotateRing({ clientX: x, clientY: y }),
     pickBodyAt: (x, y) => mannequin.pickMannequinBody({ clientX: x, clientY: y }),
     // Möbel mit dem Finger verschieben (Gerald 06.11.2026, Tablet).
-    pickMoebelAt: moebelAn,
+    pickMoebelAt: (x, y) => ((window as any).__brettIsKlient ? null : moebelAn(x, y)),
     startMoebelDrag: starteMoebelZug,
     moveMoebelDrag: bewegeMoebelZug,
     endMoebelDrag: beendeMoebelZug,

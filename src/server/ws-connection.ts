@@ -5,6 +5,7 @@
 import { WebSocketServer } from 'ws';
 import type { WsDeps } from './ws-handler';
 import { KLIENT_SYNC_PFAD } from './klient-sync-pfad';
+import { klientDarf } from './permissions';
 import {
   gateSessionReady,
   gateMutation,
@@ -90,8 +91,12 @@ export function attachWsServer(wss: WebSocketServer, deps: WsDeps): void {
       try { if (KLIENT_SYNC_PFAD.test(new URL(req?.url ?? '/', 'http://x').pathname)) { ws.close(1011, 'token_check_failed'); return; } } catch { /* unten */ }
     }
     })().finally(() => { ws._pruefungLaeuft = false; });
+    // Klienten-Link: Die Anmeldung des Browsers zählt nicht. Öffnet ein angemeldeter
+    // Admin den Link, ist auch er hier nur Klient (08.11.2026).
+    let ueberKlientenLink = false;
+    try { ueberKlientenLink = KLIENT_SYNC_PFAD.test(new URL(req?.url ?? '/', 'http://x').pathname); } catch { /* kein Link */ }
     const sessionBereit = new Promise<void>((fertig) => {
-      if (deps.sessionMiddleware && req) {
+      if (deps.sessionMiddleware && req && !ueberKlientenLink) {
         deps.sessionMiddleware(req, {}, () => {
           ws._session = req.session;
           ws._sessionReady = true;
@@ -129,6 +134,10 @@ export function attachWsServer(wss: WebSocketServer, deps: WsDeps): void {
         // Block any non-pong message until the session is wired, so isAdmin/role
         // resolution never runs against an undefined session.
         if (!gateSessionReady(ws, (m: any) => ws.send(JSON.stringify(m)))) {
+          return;
+        }
+        if (ws._isKlient && !klientDarf(msg)) {
+          try { ws.send(JSON.stringify({ type: 'error', reason: 'forbidden' })); } catch {}
           return;
         }
         if (msg.type === 'join' && typeof msg.room === 'string') {

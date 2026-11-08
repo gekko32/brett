@@ -146,6 +146,8 @@ export function onWsMessage(evt: MessageEvent): void {
     }
 
     case 'figure_unlocked': {
+      // Ohne das blieb die Figur für alle anderen gesperrt, bis jemand neu lud.
+      activeLocks.delete(msg.id);
       clearFigureLockBadge(msg.id);
       break;
     }

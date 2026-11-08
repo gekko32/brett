@@ -338,12 +338,13 @@
     #fig-panel-edge-tab { display: none !important; }
     /* Handy (08.11.2026): Anker/Fläche liegen jetzt im Steuerpult; Maus-Hinweise verdeckten nur das Brett. */
     #ground-objects-toolbar { display: none !important; }
-    @media (pointer: coarse) { #status-pill, #observer-hint { display: none !important; } }
+    html.touch #status-pill, html.touch #observer-hint { display: none !important; }
     /* Innensicht (08.11.2026): Das Feld unten links hat alles; Rückgängig/Wiederholen und der
        doppelte Beenden-Knopf lagen darüber und waren am Handy nicht zu treffen. */
     body:has(#pov-panel) #btn-undo, body:has(#pov-panel) #btn-redo, body:has(#pov-panel) #btn-release-possession { display: none !important; }
-    /* Klienten-Link (08.11.2026): nur das Brett und die Frage. */
-    body.klient-ansicht > *:not(canvas):not(#regiebuch-frage):not(#klient-meldung):not(script) { display: none !important; }
+    /* Klienten-Link (08.11.2026): nur das Brett, die Frage und das Drehen. */
+    body.klient-ansicht > *:not(canvas):not(#regiebuch-frage):not(#klient-meldung):not(#klient-hinweis):not(#appearance-badge):not(script) { display: none !important; }
+    #klient-hinweis { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); width: max-content; max-width: calc(100vw - 32px); padding: 8px 14px; border-radius: 10px; background: rgba(14,17,22,0.8); color: #f3efe6; font: 14px/1.4 system-ui, sans-serif; text-align: center; pointer-events: none; z-index: 30; }
     #klient-meldung { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 80vw; color: #e7ead0; font: 16px/1.5 system-ui, sans-serif; text-align: center; }
     /* Präsentationsansicht: solange das Steuerpult-Fenster offen ist, zeigt das
        Brett nur das Spielfeld (für Bildschirmteilen). */

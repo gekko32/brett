@@ -1,8 +1,9 @@
 // brett/src/client/klient-ansicht.ts
 // Klienten-Ansicht (Gerald 08.11.2026): Aufruf über den persönlichen Link
-// /k/<token>. Kein Startbildschirm, keine Bedienelemente, nur das Brett und
-// (falls eingeblendet) die Frage aus dem Regiebuch. Der Server lässt diese
-// Verbindung nur lesen und nur diesen einen Raum sehen.
+// /k/<token>. Kein Startbildschirm, kein Steuerpult: nur das Brett und (falls
+// eingeblendet) die Frage aus dem Regiebuch. Der Klient kann Figuren bewegen,
+// drehen und setzen, sonst nichts. Das erzwingt der Server (klientDarf), die
+// Oberfläche hier richtet sich nur danach. Nur dieser eine Raum.
 
 import { injectTheme } from './ui/theme';
 import { currentUser } from './state';
@@ -20,6 +21,7 @@ function meldung(text: string): void {
 
 export async function starteKlientenAnsicht(): Promise<void> {
   (window as any).__brettIsZuschauer = true;
+  (window as any).__brettIsKlient = true;
   injectTheme();
   document.body.classList.add('klient-ansicht');
   for (const id of ['brett-menu', 'brett-lobby']) {
@@ -41,4 +43,9 @@ export async function starteKlientenAnsicht(): Promise<void> {
   history.replaceState(null, '', `${location.pathname}?${new URLSearchParams({ room: roomToken, klient_token: token })}`);
   const board = await import('./board-boot');
   await board.bootBoard();
+  const hinweis = document.createElement('div');
+  hinweis.id = 'klient-hinweis';
+  hinweis.textContent = 'Figur ziehen = bewegen · antippen, dann ⟲ ⟳ = drehen · auf einen Stuhl ziehen = setzen';
+  document.body.append(hinweis);
+  setTimeout(() => hinweis.remove(), 15_000);
 }

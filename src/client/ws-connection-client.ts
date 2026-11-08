@@ -11,8 +11,9 @@ export function setMessageHandler(fn: (evt: MessageEvent) => void): void {
 }
 
 function send(msg: ClientMessage): void {
-  // Zuschauer/Klient senden nichts außer dem Beitritt (ohne ihn bliebe das Brett leer).
-  if ((window as any).__brettIsZuschauer && msg.type !== 'join') return;
+  // Zuschauer senden nichts außer dem Beitritt (ohne ihn bliebe das Brett leer).
+  // Der Klient darf bewegen, drehen und setzen; alles andere weist der Server ab.
+  if ((window as any).__brettIsZuschauer && !(window as any).__brettIsKlient && msg.type !== 'join') return;
   const ws = getWs();
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(msg));
