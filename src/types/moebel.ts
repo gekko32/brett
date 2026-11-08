@@ -153,3 +153,51 @@ export function sitzplaetze(liste: Moebel[]): Sitzplatz[] {
 export function istBesetzt(p: Pick<Sitzplatz, 'x' | 'z'>, figuren: Array<{ id: string; x: number; z: number }>, ausser?: string): boolean {
   return figuren.some(f => f.id !== ausser && Math.hypot(f.x - p.x, f.z - p.z) < 0.3);
 }
+
+// ── Hinsetzen per Ziehen, Mitnehmen (Gerald 08.11.2026) ──────────────────────
+
+/** So nah muss eine Figur beim Loslassen am Sitzplatz sein, damit sie einrastet. */
+export const SITZ_FANGRADIUS = 0.9;
+
+export interface FigurPos { id: string; x: number; z: number; preset?: string }
+
+/** Nächster freier Sitzplatz innerhalb des Fangradius, sonst null. */
+export function naechsterSitzplatz(liste: Moebel[], f: FigurPos, alle: FigurPos[]): Sitzplatz | null {
+  let beste: Sitzplatz | null = null;
+  let abstand = SITZ_FANGRADIUS;
+  for (const p of sitzplaetze(liste)) {
+    if (istBesetzt(p, alle, f.id)) continue;
+    const d = Math.hypot(p.x - f.x, p.z - f.z);
+    if (d <= abstand) { abstand = d; beste = p; }
+  }
+  return beste;
+}
+
+/** Sitzt die Figur gerade auf einem Platz? (Haltung „sit“ und auf dem Platz) */
+export function sitztAufPlatz(liste: Moebel[], f: FigurPos): boolean {
+  return f.preset === 'sit' && sitzplaetze(liste).some(p => Math.hypot(p.x - f.x, p.z - f.z) < 0.3);
+}
+
+/** Wer sitzt auf diesem Möbelstück? */
+export function sitzendeAuf(m: Moebel, alle: FigurPos[]): FigurPos[] {
+  const plaetze = sitzplaetze([m]);
+  return alle.filter(f => f.preset === 'sit' && plaetze.some(p => Math.hypot(p.x - f.x, p.z - f.z) < 0.3));
+}
+
+/**
+ * Möbel wurde verschoben oder gedreht: neue Plätze der Sitzenden.
+ * Gibt es den Platz nicht mehr (Bank verkürzt), bleibt die Figur draußen.
+ */
+export function mitnehmen(alt: Moebel, neu: Moebel, alle: FigurPos[]): Array<{ id: string; x: number; z: number; facingY: number }> {
+  const altP = sitzplaetze([alt]);
+  const neuP = sitzplaetze([neu]);
+  const aus: Array<{ id: string; x: number; z: number; facingY: number }> = [];
+  for (const f of alle) {
+    if (f.preset !== 'sit') continue;
+    const a = altP.find(p => Math.hypot(p.x - f.x, p.z - f.z) < 0.3);
+    if (!a) continue;
+    const n = neuP.find(p => p.platz === a.platz);
+    if (n) aus.push({ id: f.id, x: n.x, z: n.z, facingY: n.facingY });
+  }
+  return aus;
+}

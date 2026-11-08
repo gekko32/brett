@@ -34,7 +34,7 @@ export function createModerationElements(): ModerationElements {
 
   const releaseBtn = document.createElement('button');
   releaseBtn.id = 'btn-release-possession';
-  releaseBtn.textContent = '🚶 Loslassen';
+  releaseBtn.textContent = '↩ Innensicht beenden';
   Object.assign(releaseBtn.style, {
     display: 'none',
     position: 'absolute',

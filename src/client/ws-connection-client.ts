@@ -11,7 +11,8 @@ export function setMessageHandler(fn: (evt: MessageEvent) => void): void {
 }
 
 function send(msg: ClientMessage): void {
-  if ((window as any).__brettIsZuschauer) return;
+  // Zuschauer/Klient senden nichts außer dem Beitritt (ohne ihn bliebe das Brett leer).
+  if ((window as any).__brettIsZuschauer && msg.type !== 'join') return;
   const ws = getWs();
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(msg));
@@ -92,7 +93,10 @@ export function buildSyncUrl(search: string, host: string, protocol: string, use
   if (zuschauerToken) params.set('zuschauer_token', zuschauerToken);
   if (userId && userId !== 'anon') params.set('playerId', userId);
   const scheme = protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${scheme}//${host}/sync?${params.toString()}`;
+  // Klienten-Link: Schlüssel im Pfad, siehe server/klient-sync-pfad.ts.
+  const klientToken = src.get('klient_token');
+  const pfad = klientToken ? `/sync/k/${encodeURIComponent(klientToken)}` : '/sync';
+  return `${scheme}//${host}${pfad}?${params.toString()}`;
 }
 
 export function connectWS(): void {

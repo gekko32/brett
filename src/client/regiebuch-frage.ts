@@ -16,7 +16,8 @@ export function zeigeRegiebuchFrage(text: string | null | undefined): void {
     el.setAttribute('role', 'status');
     el.setAttribute('aria-live', 'polite');
     Object.assign(el.style, {
-      position: 'fixed', left: '50%', bottom: '96px', // über der Hinweiszeile unten transform: 'translateX(-50%)',
+      // bottom: über der Hinweiszeile; width: damit die Breite nicht an left:50% hängt (Handy).
+      position: 'fixed', left: '50%', bottom: '96px', transform: 'translateX(-50%)', width: 'max-content',
       maxWidth: 'min(760px, calc(100vw - 32px))', padding: '14px 22px', borderRadius: '14px',
       background: 'rgba(14,17,22,0.86)', color: '#f3efe6', border: '1px solid rgba(200,169,110,0.7)',
       font: '500 20px/1.4 ui-sans-serif, system-ui, sans-serif', textAlign: 'center',

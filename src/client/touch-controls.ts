@@ -8,7 +8,7 @@ import * as mannequin from './mannequin';
 import * as wsClient from './ws-client';
 import * as figPanel from './ui/fig-panel';
 import { initTouchHandler, type TouchDeps } from './touch-handler';
-import { moebelAn, starteMoebelZug, bewegeMoebelZug, beendeMoebelZug } from './moebel-3d';
+import { moebelAn, starteMoebelZug, bewegeMoebelZug, beendeMoebelZug, figurZugStart, figurLosgelassen } from './moebel-3d';
 import * as snapping from './snapping';
 import type { ClientModerationState } from './ws-client';
 import { computeGrabOffset, applyGrabOffset, angleAround, rotateFacing, shouldSend } from './figure-drag';
@@ -42,6 +42,7 @@ export function initBoardTouchControls(deps: TouchControlsDeps): void {
     if (!fig) return false;
     const lock = activeLocks.get(fig.id);
     if (lock && lock.userId !== currentUser.userId) return false;
+    if ((window as any).__brettIsZuschauer) return false; // Klient/Zuschauer: nur ansehen
     if (getCurrentModerationState().freeze) {
       const myRole = wsClient.getLobbyState()?.roster?.[currentUser.userId]?.role;
       if (myRole !== 'leiter') return false;
@@ -104,6 +105,7 @@ export function initBoardTouchControls(deps: TouchControlsDeps): void {
       const root = { x: fig.root.position.x, z: fig.root.position.z };
       const grabOffset = computeGrabOffset({ x: floorHit.x, z: floorHit.z }, root);
       touchDrag = { kind: 'body', figId: figId!, grabOffset };
+      figurZugStart(fig);
     },
     moveFigureDrag: (x, y) => {
       if (!touchDrag) return;
@@ -168,6 +170,7 @@ export function initBoardTouchControls(deps: TouchControlsDeps): void {
           snapping.finishDrag(fig);
         } else if (d.kind === 'body') {
           snapping.finishDrag(fig);
+          figurLosgelassen(fig); // Auf einen Stuhl gezogen → setzt sich (08.11.2026)
         } else if (d.kind === 'rotate') {
           wsClient.sendMove(fig.id, fig.root.position.x, fig.root.position.z, fig.facingY);
         }

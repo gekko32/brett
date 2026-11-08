@@ -3,7 +3,7 @@
 // drehen, Länge ändern, löschen. Verschieben geht auf dem Brett mit der Maus.
 // Texte zunächst nur Deutsch.
 
-import { type Moebel, type MoebelArt, MOEBEL_ARTEN, stuehleUmTisch, normalisiereMoebel } from '../types/moebel';
+import { type Moebel, type MoebelArt, type FigurPos, MOEBEL_ARTEN, stuehleUmTisch, normalisiereMoebel, mitnehmen, sitzendeAuf } from '../types/moebel';
 import type { PultHelfer } from './pult-klient';
 
 export const moebelZustand = { liste: [] as Moebel[] };
@@ -12,6 +12,10 @@ export interface MoebelDeps {
   senden: (m: any) => void;
   /** Positionen der Figuren, damit Neues nicht auf einer Figur landet. */
   belegtePlaetze: () => Array<{ x: number; z: number }>;
+  /** Figuren mit Haltung: wer auf einem Möbel sitzt, kommt beim Bewegen mit. */
+  figuren: () => FigurPos[];
+  bewegeFigur: (id: string, x: number, z: number, facingY: number) => void;
+  stehAuf: (id: string) => void;
 }
 
 const neueId = () => (crypto.randomUUID?.() ?? String(Date.now()) + Math.random().toString(36).slice(2)).slice(0, 36);
@@ -63,30 +67,40 @@ export function moebelBlock(hf: PultHelfer, d: MoebelDeps): HTMLElement {
   });
   const raum = knopf('＋ Raum aus 4 Wänden', () => setze([...L, ...raumAusWaenden()], d, hf));
 
+  const aendereStueck = (id: string, patch: Partial<Moebel>) => {
+    const alt = L.find(x => x.id === id);
+    if (!alt) return;
+    const neu = { ...alt, ...patch };
+    for (const p of mitnehmen(alt, neu, d.figuren())) d.bewegeFigur(p.id, p.x, p.z, p.facingY);
+    setze(L.map(x => x.id === id ? neu : x), d, hf);
+  };
+  const aufstehen = (m: Moebel) => { for (const f of sitzendeAuf(m, d.figuren())) d.stehAuf(f.id); };
+
   const zaehler: Record<string, number> = {};
   const zeilen = L.map((m) => {
     zaehler[m.art] = (zaehler[m.art] ?? 0) + 1;
     const info = MOEBEL_ARTEN[m.art];
-    const drehe = (grad: number) => setze(L.map(x => x.id === m.id ? { ...x, facingY: x.facingY + grad * Math.PI / 180 } : x), d, hf);
+    const drehe = (grad: number) => aendereStueck(m.id, { facingY: m.facingY + grad * Math.PI / 180 });
     let laenge: HTMLInputElement | null = null;
     if (info.laengeVon !== undefined) {
       laenge = h('input', { type: 'number', min: String(info.laengeVon), max: String(info.laengeBis), step: '0.1',
         value: String(m.laenge ?? info.breite), title: 'Länge', style: { width: '64px' } }) as HTMLInputElement;
       laenge.addEventListener('change', () => {
         const v = parseFloat(laenge!.value);
-        if (isFinite(v)) setze(L.map(x => x.id === m.id ? { ...x, laenge: v } : x), d, hf);
+        if (isFinite(v)) aendereStueck(m.id, { laenge: v });
       });
     }
     return h('div', { class: 'moebel-zeile' },
       h('span', { class: 'moebel-name' }, `${info.name} ${zaehler[m.art]}`),
       knopf('⟲', () => drehe(-15), 'mini'), knopf('⟳', () => drehe(15), 'mini'), knopf('↻ 90°', () => drehe(90), 'mini'),
       laenge ?? h('span', { style: { width: '64px', flexShrink: '0' } }),
-      knopf('✕', () => setze(L.filter(x => x.id !== m.id), d, hf), 'mini'));
+      knopf('✕', () => { aufstehen(m); setze(L.filter(x => x.id !== m.id), d, hf); }, 'mini'));
   });
 
   let alleBereit = false;
   const alle = knopf('Alle entfernen', () => {
     if (!alleBereit) { alleBereit = true; alle.textContent = 'Wirklich alle?'; alle.classList.add('warn'); return; }
+    L.forEach(aufstehen);
     setze([], d, hf);
   });
 
@@ -94,7 +108,7 @@ export function moebelBlock(hf: PultHelfer, d: MoebelDeps): HTMLElement {
   return hf.block('moebel', `Möbel & Wände (${L.length})`,
     h('div', { class: 'raster3' }, ...arten.map(hinzu)),
     h('div', { class: 'reihe', style: { marginTop: '4px' } }, tischMitStuehlen, raum),
-    h('div', { class: 'klein', style: { margin: '4px 0' } }, 'Auf dem Brett mit der Maus verschieben. Drehen und Länge hier.'),
+    h('div', { class: 'klein', style: { margin: '4px 0' } }, 'Auf dem Brett antippen zum Drehen, ziehen zum Verschieben. Figur auf einen Stuhl ziehen: Sie setzt sich.'),
     ...(zeilen.length ? zeilen : [h('div', { class: 'leer' }, 'Noch keine Möbel auf dem Brett.')]),
     ...(L.length ? [h('div', { class: 'reihe', style: { marginTop: '6px' } }, alle)] : []),
   );

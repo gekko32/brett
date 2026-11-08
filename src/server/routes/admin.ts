@@ -42,14 +42,6 @@ adminRouter.get('/api/state', auth.requireSession, asyncHandler(async (req: any,
   res.json(rows[0]?.state ?? { figures: [] });
 }));
 
-// Customer dropdown source.
-adminRouter.get('/api/customers', asyncHandler(async (_req: any, res: any) => {
-  const { rows } = await db.getPool().query(
-    'SELECT id, name FROM customers ORDER BY name ASC'
-  );
-  res.json(rows);
-}));
-
 // Coaching-step templates surfaced in the lobby. Public read (no admin gate) —
 // they contain only generic coaching prompts, no client data.
 adminRouter.get('/api/templates', asyncHandler(async (_req: any, res: any) => {

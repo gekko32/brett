@@ -13,6 +13,7 @@ import { injectLobbyStyles, mountLobby, buildLobbyViewModel } from './ui/lobby';
 import { buildCoachingStepsPayload } from './lobby-coaching';
 import { createAppShell, type ViewState } from './app-shell';
 import { currentUser } from './state';
+import { istKlientenAdresse, starteKlientenAnsicht } from './klient-ansicht';
 
 function getMenuRoot(): HTMLElement | null {
   return document.getElementById('brett-menu');
@@ -81,6 +82,8 @@ function renderLobby(user: MenuUser): void {
 }
 
 async function main(): Promise<void> {
+  // Persönlicher Klienten-Link: direkt aufs Brett, ohne Startbildschirm (08.11.2026).
+  if (istKlientenAdresse(location.pathname)) { await starteKlientenAnsicht(); return; }
   injectTheme();
   injectPrimitivesStyles();
   injectMenuStyles();

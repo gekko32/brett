@@ -24,6 +24,7 @@ import { attachShareRoutes } from './share-routes';
 import { snapshotsRouter } from './routes/snapshots';
 import { klientenRouter } from './routes/klienten';
 import { regiebuecherRouter } from './routes/regiebuecher';
+import { attachKlientLink } from './routes/klient-link';
 import { authRouter } from './routes/auth';
 import { adminRouter } from './routes/admin';
 import { presetsRouter } from './routes/presets';
@@ -96,6 +97,7 @@ app.use(boardTemplatesRouter);
 
 // T000608: View-only-Share-Link-Routen (/share/:token + Token-CRUD).
 attachShareRoutes(app, staticDir);
+attachKlientLink(app, staticDir);
 
 
 // Generic error handler so we never leak stack traces.
@@ -104,14 +106,16 @@ app.use((err: any, _req: any, res: any, _next: any) => {
   res.status(500).json({ error: 'internal_error' });
 });
 
+import { istSyncPfad } from './klient-sync-pfad';
+
 export const server = http.createServer(app);
 export const wss = new WebSocketServer({
   server,
-  path: '/sync',
   maxPayload: 64 * 1024,
   verifyClient: (info: any, cb: any) => {
     try {
       const url = new URL(info.req.url, 'http://x');
+      if (!istSyncPfad(url.pathname)) return cb(false, 400, 'Bad Request');
       const room = url.searchParams.get('room');
       if (!room) return cb(true);
       const decision = sessions.shouldRejectReconnect(room, url.searchParams.get('playerId'));
@@ -206,6 +210,7 @@ const wsDeps = {
   clearUndoStacks,
   resolveShareToken: shareTokens.resolveShareToken,
   resolveZuschauerToken: shareTokens.resolveZuschauerToken,
+  resolveKlientToken: shareTokens.resolveKlientToken,
 };
 
 wsHandler.attachWsServer(wss, wsDeps);
