@@ -25,7 +25,15 @@ export function isFigureHidden(fig: any): boolean {
  */
 export function filterSnapshotFigures(figures: Figure[], role: Role): Figure[] {
   if (isLeader(role)) return figures;
-  return figures.filter((f) => !isFigureHidden(f));
+  const sichtbar = figures.filter((f) => !isFigureHidden(f));
+  return role === 'zuschauer' ? sichtbar.map(ohneNotiz) : sichtbar;
+}
+
+/** Notizen des Coachs gehen nie an Zuschauer und Klienten (Link ohne Konto). */
+function ohneNotiz<T>(f: T): T {
+  if (!f || typeof f !== 'object' || !('note' in (f as any))) return f;
+  const { note: _weg, ...rest } = f as any;
+  return rest as T;
 }
 
 type FigureLookup = (id: string) => any | null | undefined;
@@ -47,13 +55,19 @@ export function translateBroadcastForRole(
 ): ServerMessage | null {
   if (isLeader(role)) return msg as ServerMessage;
 
+  if (role === 'zuschauer') {
+    if (msg?.type === 'figure_note_changed' || msg?.type === 'figure_note_set') return null;
+    if (msg?.type === 'add' && msg.figure && 'note' in msg.figure) msg = { ...msg, figure: ohneNotiz(msg.figure) };
+    if (msg?.type === 'update' && msg.changes && 'note' in msg.changes) msg = { ...msg, changes: ohneNotiz(msg.changes) };
+  }
+
   if (msg && msg.type === 'figure_hidden_changed') {
     if (msg.hidden) {
       return { type: 'delete', id: msg.figureId };
     }
     const fig = figureLookup(msg.figureId);
     if (!fig || isFigureHidden(fig)) return null;
-    return { type: 'add', figure: fig as Figure };
+    return { type: 'add', figure: (role === 'zuschauer' ? ohneNotiz(fig) : fig) as Figure };
   }
 
   // `add` einer bereits als hidden markierten Figur (Server-autoritativ): unterdrücken.

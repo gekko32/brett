@@ -153,6 +153,12 @@ export function gateMutation(
   if (ws?._isGuest) {
     return msgType === 'request_state_snapshot';
   }
+  if (ws?._isKlient) {
+    if (msgType === 'request_state_snapshot') return true;
+    // Eingefroren heißt auch für den Klienten: nichts bewegen.
+    if (deps.buildStateFromMutations(room)?.moderation?.freeze) return false;
+    return msgType === 'move' || msgType === 'update' || msgType === 'figure_lock';
+  }
   if (ws?._isZuschauer) {
     return msgType === 'request_state_snapshot';
   }

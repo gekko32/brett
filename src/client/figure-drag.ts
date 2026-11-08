@@ -105,10 +105,11 @@ export function initFigureDrag(deps: FigureDragDeps): void {
 
   renderer.domElement.addEventListener('mousedown', (e: MouseEvent) => {
     if (e.button !== 0 || e.shiftKey) return;
-    if ((window as any).__brettIsZuschauer) return; // Klient/Zuschauer: nur ansehen
+    const klient = !!(window as any).__brettIsKlient;
+    if ((window as any).__brettIsZuschauer && !klient) return; // Zuschauer: nur ansehen
 
-    // Priority 1: contact sphere → IK bone drag (unchanged behaviour).
-    const sphere = mannequin.pickContact(e);
+    // Priority 1: contact sphere → IK bone drag (unchanged behaviour). Nicht für Klienten.
+    const sphere = klient ? null : mannequin.pickContact(e);
     if (sphere) {
       const fig = STATE.figures.find((f) => f.id === sphere.userData.figureId);
       if (!fig) return;

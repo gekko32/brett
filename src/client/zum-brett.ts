@@ -5,8 +5,12 @@
 
 /** Touch-Gerät ohne Maus (Handy, Tablet). */
 export function istTouchGeraet(): boolean {
-  try { return window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(pointer: fine)').matches; }
-  catch { return false; }
+  try {
+    if (window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(pointer: fine)').matches) return true;
+    // Firefox auf Samsung-Handys meldet teils ein feines Zeigegerät; darum zusätzlich:
+    // Touch-Fähigkeit und ein Bildschirm in Handy- oder Tablet-Größe (08.11.2026).
+    return navigator.maxTouchPoints > 0 && Math.min(screen.width, screen.height) <= 900;
+  } catch { return false; }
 }
 
 export function zurueckZumBrett(room: string): void {

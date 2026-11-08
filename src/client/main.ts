@@ -14,6 +14,9 @@ import { buildCoachingStepsPayload } from './lobby-coaching';
 import { createAppShell, type ViewState } from './app-shell';
 import { currentUser } from './state';
 import { istKlientenAdresse, starteKlientenAnsicht } from './klient-ansicht';
+import { istTouchGeraet } from './zum-brett';
+
+document.documentElement.classList.toggle('touch', istTouchGeraet());
 
 function getMenuRoot(): HTMLElement | null {
   return document.getElementById('brett-menu');
