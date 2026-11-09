@@ -351,6 +351,9 @@
     body.praesentation > *:not(canvas):not(#regiebuch-frage) { display: none !important; }
     /* ☰ Menü (ui/menue.ts): Seltenes aus der Leiste, geordnet nach Abschnitten */
     #menue-btn { margin-left: auto; font-weight: 600; }
+    /* Handy: Platz für die Wechsel-Knöpfe (09.11.2026). */
+    html.touch #topbar-filter-slot input { width: 96px; }
+    html.touch #wechsel-genogramm, html.touch #wechsel-dashboard { min-height: 36px; }
     #menue-panel {
       position: fixed; top: 44px; right: 12px; z-index: 210; width: 260px;
       max-height: calc(100vh - 60px); overflow-y: auto;

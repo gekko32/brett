@@ -30,6 +30,7 @@ import * as groundObjects from './ground-objects';
 import { initZoneEditing } from './ui/zone-editor';
 import { initMoebelVerschieben } from './moebel-3d';
 import { initBildschirmRueckkehr } from './bildschirm-rueckkehr';
+import { wechselKnoepfe } from './zum-brett';
 import * as cameraModes from './camera-modes';
 import * as viewCone from './view-cone';
 import * as snapping from './snapping';
@@ -123,6 +124,7 @@ export async function bootBoard(): Promise<void> {
   initSessionPanel();
   initSteuerpultSync();
   initMenue();
+  wechselKnoepfe();
   // Gerald 18.10.2026: Was das Steuerpult kann, verschwindet aus dem Spielfeld
   // (Sitzung ▾, ＋ Figur ▾ samt „Figur bearbeiten“, ✦ Aussehen). Nur ausgeblendet –
   // die Module dahinter liefern weiter Auswahl, Hinzufügen und Drehen.
