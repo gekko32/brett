@@ -55,6 +55,27 @@
     .gewaehlt .p-form { stroke: #c06a1a; stroke-width: 4; }
     .nicht-aufgestellt { opacity: 0.55; }
     .nicht-aufgestellt .p-form { stroke-dasharray: 5 4; }
+    .katalog-kopf { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 4px 8px; }
+    .katalog-kopf span { font-size: 12px; color: var(--muted); }
+    .katalog-kopf button { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 600; min-height: 36px; }
+    #g-panel-knopf { display: none; }
+    /* Handy (09.11.2026): Die Fläche bekommt den ganzen Bildschirm, die Eingaben kommen auf Knopfdruck. */
+    @media (max-width: 820px) {
+      body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); height: 100dvh; }
+      header { grid-column: 1; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+      header > * { flex-shrink: 0; }
+      header button { min-height: 40px; }
+      .status { margin-left: 0; }
+      aside { display: none; position: fixed; left: 0; right: 0; bottom: 0; height: 68dvh; z-index: 6;
+        background: var(--bg); border-left: none; border-top: 2px solid var(--accent); border-radius: 14px 14px 0 0; padding-bottom: 72px; }
+      body.panel-offen aside { display: block; }
+      #g-panel-knopf { display: block; position: fixed; right: 12px; bottom: 12px; z-index: 7; min-height: 48px; padding: 0 16px;
+        background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 600; border-radius: 24px; }
+      .katalog { top: 62px; left: 8px; right: 8px; width: auto; max-height: calc(100dvh - 140px); z-index: 8; }
+      .katalog summary { padding: 10px 6px; font-size: 14px; }
+      .katalog .raster button { min-height: 44px; font-size: 13px; }
+      .hinweis { bottom: 72px; right: 12px; }
+    }
   </style>
 </head>
 <body>

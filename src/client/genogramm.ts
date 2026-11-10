@@ -17,7 +17,7 @@ import {
 import { EREIGNISSE } from './person-catalog';
 import { ebeneText, rolleText, ereignisText, artText } from './katalog-texte';
 import type { PultNachricht } from './steuerpult-sync';
-import { zumBrettKnopf } from './zum-brett';
+import { zumBrettKnopf, dashboardKnopf, dashboardAdresse } from './zum-brett';
 
 type Fig = GenoPerson & { x: number; z: number; color?: string; [k: string]: any };
 
@@ -824,14 +824,29 @@ function personHinzufuegen(ebeneKey: string, rolleKey: string): void {
     ...(r.blass ? { opacity: BLASS_OPACITY } : {}),
   };
   figurNeuMitVerlauf(fig);
-  document.querySelector('.katalog')?.remove();
+  // Das Menü bleibt offen, bis alle Personen ergänzt sind (Gerald 09.11.2026).
+  katalogZaehler++;
+  const anzeige = document.querySelector('.katalog-zahl');
+  if (anzeige) anzeige.textContent = katalogZaehler === 1 ? '1 Person hinzugefügt' : `${katalogZaehler} Personen hinzugefügt`;
   waehlen(id);
 }
 
+let katalogZaehler = 0;
+
+function katalogSchliessen(): void {
+  document.querySelector('.katalog')?.remove();
+  if (katalogZaehler > 0) einpassen();
+  katalogZaehler = 0;
+}
+
 function katalogZeigen(): void {
-  const alt = document.querySelector('.katalog');
-  if (alt) { alt.remove(); return; }
+  if (document.querySelector('.katalog')) { katalogSchliessen(); return; }
   const k = document.createElement('div'); k.className = 'katalog';
+  const kopf = document.createElement('div'); kopf.className = 'katalog-kopf';
+  const zahl = document.createElement('span'); zahl.className = 'katalog-zahl'; zahl.textContent = 'Personen antippen';
+  const fertig = document.createElement('button'); fertig.type = 'button'; fertig.textContent = 'Fertig';
+  fertig.addEventListener('click', katalogSchliessen);
+  kopf.append(zahl, fertig); k.append(kopf);
   for (const eb of PERSONEN_KATALOG) {
     const d = document.createElement('details');
     const s = document.createElement('summary'); s.textContent = ebeneText(eb); s.style.borderLeftColor = eb.farbe; d.append(s);
@@ -995,7 +1010,7 @@ function einpassen(): void {
   const minY = Math.min(...pos.map(p => p.y)) - 60, maxY = Math.max(...pos.map(p => p.y)) + 90;
   const r = svg.getBoundingClientRect();
   // Platz für die Legende links oben lassen
-  const links = legendeAn ? 260 : 0;
+  const links = legendeAn && r.width > 700 ? 260 : 0;
   const breite = r.width - links;
   const s = Math.max(0.25, Math.min(2, Math.min(breite / (maxX - minX), r.height / (maxY - minY))));
   ansicht = { s, x: links + (breite - (maxX - minX) * s) / 2 - minX * s, y: (r.height - (maxY - minY) * s) / 2 - minY * s };
@@ -1024,6 +1039,16 @@ function start(): void {
   initLang();
   // Weg zurück zum Brett (Gerald 06.11.2026: auf dem Handy öffnet sich das Genogramm als eigener Tab).
   if (room) document.querySelector('header')?.prepend(zumBrettKnopf(room));
+  if (dashboardAdresse(location.host, location.protocol)) document.querySelector('header')?.prepend(dashboardKnopf());
+  const panelKnopf = document.createElement('button');
+  panelKnopf.type = 'button'; panelKnopf.id = 'g-panel-knopf'; panelKnopf.textContent = '✎ Eingaben';
+  panelKnopf.addEventListener('click', () => {
+    const offen = document.body.classList.toggle('panel-offen');
+    panelKnopf.textContent = offen ? '✕ Zur Zeichnung' : '✎ Eingaben';
+  });
+  document.body.append(panelKnopf);
+  // Am Handy braucht die Zeichnung den Platz; die Legende bleibt über ihren Knopf erreichbar.
+  if (window.innerWidth <= 820) legendeAn = false;
   applyTranslations();
   document.title = `${t('geno.title')} · Systembrett`;
   if (!room) { status(t('pult.noRoom'), true); return; }

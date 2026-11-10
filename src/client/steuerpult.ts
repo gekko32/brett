@@ -22,7 +22,7 @@ import { klient, klientBlock, klientName, starteKlient, aufstellungenUrl } from 
 import { rb, regiebuchBlock, ladeRegiebuecher } from './pult-regiebuch';
 import { moebelZustand, moebelBlock } from './pult-moebel';
 import { sitzplaetze, istBesetzt } from '../types/moebel';
-import { zumBrettKnopf } from './zum-brett';
+import { zumBrettKnopf, istTouchGeraet, zumGenogramm } from './zum-brett';
 import { markierungenEmpfangen, markierungenBlock } from './pult-markierungen';
 
 /** Zuletzt geladene gespeicherte Aufstellung: neue Speicherungen vermerken sie als Herkunft. */
@@ -768,6 +768,7 @@ function zeichnen(erzwingen = false): void {
 // ── Start ────────────────────────────────────────────────────────────────────
 /** Genogramm-Fenster öffnen (links neben dem Pult, über dem Spielfeld). */
 function oeffneGenogramm(): void {
+  if (istTouchGeraet()) { zumGenogramm(room); return; }
   const sc = screen as any;
   const breite = Math.min(1100, screen.availWidth - 480);
   const w = window.open('/genogramm.html?room=' + encodeURIComponent(room), 'brett-genogramm-' + room,
